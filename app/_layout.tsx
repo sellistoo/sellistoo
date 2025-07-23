@@ -12,6 +12,10 @@ export default function RootLayout() {
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
   });
 
+  // In a production app, you would want to check if the user is authenticated
+  // and redirect them to the appropriate screen (auth or app) here.
+  const isAuthenticated = false; // Replace with your actual authentication check
+
   if (!loaded) {
     // Async font loading only occurs in development.
     return null;
@@ -20,7 +24,12 @@ export default function RootLayout() {
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        {/* Conditionally render based on authentication status */}
+        {isAuthenticated ? (
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        ) : (
+          <Stack.Screen name="auth" options={{ headerShown: false }} />
+        )}
         <Stack.Screen name="+not-found" />
       </Stack>
       <StatusBar style="auto" />
