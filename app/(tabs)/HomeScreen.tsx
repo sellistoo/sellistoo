@@ -1,188 +1,349 @@
+import BannerSlider from "@/components/BannerSlider";
+import { Colors } from "@/constants/Colors";
+import { useColorScheme } from "@/hooks/useColorScheme";
+import { Feather, Ionicons } from "@expo/vector-icons";
 import React from "react";
 import {
   FlatList,
   Image,
-  Platform,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
 
-const featuredProducts = [
+// Dummy Data
+const categories = [
+  { id: "1", name: "Phones", icon: "📱" },
+  { id: "2", name: "Consoles", icon: "🎮" },
+  { id: "3", name: "Laptops", icon: "💻" },
+  { id: "4", name: "Cameras", icon: "📷" },
+  { id: "5", name: "Audio", icon: "🎧" },
+];
+
+const flashSale = [
   {
     id: "1",
-    name: "Nike Air Max",
-    price: "₹4,999",
-    image: {
-      uri: "https://images.unsplash.com/photo-1586796676072-d1a2014f61f7?w=600",
-    },
+    name: "Apple iPhone 15 Pro 128GB",
+    price: "£699.00",
+    oldPrice: "£739.00",
+    image:
+      "https://store.storeimages.cdn-apple.com/4668/as-images.apple.com/is/iphone-15-pro-model-select-202309?wid=470&hei=556&fmt=png-alpha&.v=1692923810002",
   },
   {
     id: "2",
-    name: "Adidas Ultraboost",
-    price: "₹5,299",
-    image: {
-      uri: "https://images.unsplash.com/photo-1595950653106-6c9ebd614d3e?w=600",
-    },
+    name: "Samsung Galaxy Buds Pro",
+    price: "£69.00",
+    oldPrice: "£85.00",
+    image:
+      "https://images.samsung.com/is/image/samsung/assets/uk/audio/galaxy-buds/galaxy-buds-pro/galaxy-buds-pro_kv_mo.jpg",
+  },
+];
+
+const banners = [
+  {
+    id: "1",
+    title: "Delivery is",
+    discountText: "50% OFF",
+    image: "https://images.unsplash.com/photo-1600185365483-26d7c481c959?w=600",
+  },
+  {
+    id: "2",
+    title: "Mega Deals",
+    discountText: "20% OFF",
+    image: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=600",
   },
   {
     id: "3",
-    name: "Vans Red",
-    price: "₹3,899",
-    image: {
-      uri: "https://images.unsplash.com/photo-1519741491158-3c8166e3c424?w=600",
-    },
+    title: "New Arrivals",
+    discountText: "30% OFF",
+    image: "https://images.unsplash.com/photo-1598515214213-7c603db7ed1e?w=600",
   },
 ];
 
-const shops = [
-  {
-    id: "nike",
-    name: "Nike",
-    image: { uri: "https://img.icons8.com/color/96/nike.png" },
-  },
-  {
-    id: "adidas",
-    name: "Adidas",
-    image: { uri: "https://img.icons8.com/color/96/adidas.png" },
-  },
-  {
-    id: "gucci",
-    name: "Gucci",
-    image: { uri: "https://img.icons8.com/color/96/gucci.png" },
-  },
-];
+export default function HomeScreen() {
+  const colorScheme = useColorScheme();
+  const theme = Colors[colorScheme ?? "light"];
 
-const HomeScreen = () => {
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-        {/* Banner */}
-        <Image
-          style={styles.banner}
-          source={{
-            uri: "https://images.unsplash.com/photo-1600185365483-26d7c481c959?w=1080",
-          }}
-          resizeMode="cover"
-        />
-
-        {/* Shops */}
-        <Text style={styles.sectionTitle}>Popular Shops</Text>
-        <View style={styles.shopRow}>
-          {shops.map((shop) => (
-            <TouchableOpacity key={shop.id} style={styles.shopCard}>
-              <Image source={shop.image} style={styles.shopImage} />
-              <Text style={styles.shopName}>{shop.name}</Text>
-            </TouchableOpacity>
-          ))}
+    <ScrollView
+      style={[styles.container, { backgroundColor: theme.background }]}
+      contentContainerStyle={{ paddingBottom: 40 }}
+    >
+      {/* Address Bar */}
+      <View
+        style={[styles.addressContainer, { backgroundColor: theme.secondary }]}
+      >
+        <TouchableOpacity
+          style={[styles.addressLeftIcon, { backgroundColor: theme.accent }]}
+        >
+          <Ionicons name="location-outline" size={20} color={theme.text} />
+        </TouchableOpacity>
+        <View style={styles.addressContent}>
+          <Text style={[styles.addressLabel, { color: theme.mutedText }]}>
+            Deliver to
+          </Text>
+          <Text style={[styles.addressValue, { color: theme.text }]}>
+            92 High Street, London
+          </Text>
         </View>
+        <TouchableOpacity style={styles.addressRightIcon}>
+          <Feather name="bell" size={20} color={theme.icon} />
+        </TouchableOpacity>
+      </View>
 
-        {/* Featured Products */}
-        <Text style={styles.sectionTitle}>Featured Products</Text>
-        <FlatList
-          data={featuredProducts}
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.productList}
-          renderItem={({ item }) => (
-            <TouchableOpacity style={styles.productCard}>
-              <Image source={item.image} style={styles.productImage} />
-              <Text style={styles.productName}>{item.name}</Text>
-              <Text style={styles.productPrice}>{item.price}</Text>
-            </TouchableOpacity>
-          )}
-        />
-      </ScrollView>
-    </SafeAreaView>
+      {/* Search Bar */}
+      <View style={styles.searchBarContainer}>
+        <View style={[styles.searchBar, { backgroundColor: theme.secondary }]}>
+          <Ionicons name="search" size={20} color={theme.icon} />
+          <TextInput
+            placeholder="Search for phones, laptops, accessories..."
+            placeholderTextColor={theme.icon}
+            style={[styles.searchInput, { color: theme.text }]}
+          />
+        </View>
+      </View>
+
+      {/* Banner */}
+      <BannerSlider banners={banners} />
+
+      {/* Categories */}
+      <View style={styles.sectionHeader}>
+        <Text style={[styles.sectionTitle, { color: theme.text }]}>
+          Categories
+        </Text>
+        <TouchableOpacity>
+          <Text style={[styles.seeAll, { color: theme.tint }]}>See all</Text>
+        </TouchableOpacity>
+      </View>
+      <FlatList
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        data={categories}
+        contentContainerStyle={styles.categoryList}
+        keyExtractor={(item) => item.id}
+        renderItem={({ item }) => (
+          <View
+            style={[
+              styles.categoryCard,
+              { backgroundColor: theme.secondary, shadowColor: theme.border },
+            ]}
+          >
+            <Text style={styles.categoryIcon}>{item.icon}</Text>
+            <Text style={[styles.categoryName, { color: theme.text }]}>
+              {item.name}
+            </Text>
+          </View>
+        )}
+      />
+
+      {/* Flash Sale */}
+      <View style={styles.sectionHeader}>
+        <Text style={[styles.sectionTitle, { color: theme.text }]}>
+          Flash Sale
+        </Text>
+        <TouchableOpacity>
+          <Text style={[styles.seeAll, { color: theme.tint }]}>See all</Text>
+        </TouchableOpacity>
+      </View>
+      <FlatList
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        data={flashSale}
+        contentContainerStyle={styles.flashList}
+        keyExtractor={(item) => item.id}
+        renderItem={({ item }) => (
+          <View
+            style={[
+              styles.productCard,
+              {
+                backgroundColor: theme.cardBg,
+                shadowColor: theme.border,
+              },
+            ]}
+          >
+            <Image source={{ uri: item.image }} style={styles.productImage} />
+            <Text style={[styles.productName, { color: theme.text }]}>
+              {item.name}
+            </Text>
+            <View style={styles.priceRow}>
+              <Text style={[styles.productPrice, { color: theme.text }]}>
+                {item.price}
+              </Text>
+              <Text style={[styles.oldPrice, { color: theme.mutedText }]}>
+                {item.oldPrice}
+              </Text>
+            </View>
+          </View>
+        )}
+      />
+    </ScrollView>
   );
-};
-
+}
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: "#fff",
-    paddingTop: Platform.OS === "android" ? 30 : 0,
-  },
   container: {
-    paddingBottom: 16,
-    backgroundColor: "#fff",
+    flex: 1,
+    paddingTop: 50,
   },
-  banner: {
-    width: "100%",
-    height: 200,
-    borderRadius: 12,
-    marginBottom: 20,
-  },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: "600",
-    paddingHorizontal: 16,
-    marginBottom: 12,
-  },
-  shopRow: {
+  addressContainer: {
     flexDirection: "row",
-    justifyContent: "space-evenly",
-    paddingHorizontal: 8,
-    marginBottom: 24,
-  },
-  shopCard: {
     alignItems: "center",
-    padding: 10,
-    backgroundColor: "#f7f7f7",
+    marginHorizontal: 16,
+    marginBottom: 16,
+    padding: 12,
     borderRadius: 12,
+    elevation: 2,
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 1 },
+  },
+  addressLeftIcon: {
+    marginRight: 10,
+    padding: 8,
+    borderRadius: 20,
+  },
+  addressContent: {
+    flex: 1,
+  },
+  addressLabel: {
+    fontSize: 12,
+    fontWeight: "500",
+  },
+  addressValue: {
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  addressRightIcon: {
+    marginLeft: "auto",
+    padding: 6,
+  },
+
+  searchBarContainer: {
+    marginHorizontal: 16,
+    marginBottom: 20,
     shadowColor: "#000",
-    shadowOpacity: 0.1,
     shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
     shadowRadius: 4,
     elevation: 3,
   },
-  shopImage: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    marginBottom: 6,
+  searchBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 12,
   },
-  shopName: {
-    fontSize: 13,
+  searchInput: {
+    marginLeft: 10,
+    fontSize: 16,
+    flex: 1,
+  },
+
+  bannerContainer: {
+    marginHorizontal: 16,
+    borderRadius: 12,
+    padding: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 20,
+  },
+  bannerText: {
+    fontSize: 16,
     fontWeight: "500",
   },
-  productList: {
+  bannerImage: {
+    width: 70,
+    height: 70,
+    borderRadius: 12,
+    marginLeft: "auto",
+  },
+  discountBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    marginVertical: 4,
+    borderRadius: 6,
+  },
+  discountText: {
+    fontWeight: "600",
+    fontSize: 18,
+  },
+
+  sectionHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
     paddingHorizontal: 16,
+    marginBottom: 10,
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: "700",
+  },
+  seeAll: {
+    fontSize: 14,
+    fontWeight: "500",
+  },
+
+  categoryList: {
+    paddingLeft: 16,
+    paddingBottom: 16,
+  },
+  categoryCard: {
+    alignItems: "center",
+    marginRight: 16,
+    padding: 12,
+    borderRadius: 12,
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 1 },
+  },
+  categoryIcon: {
+    fontSize: 36,
+    marginBottom: 6,
+  },
+  categoryName: {
+    fontSize: 14,
+    fontWeight: "500",
+  },
+
+  flashList: {
+    paddingLeft: 16,
+    paddingBottom: 30,
   },
   productCard: {
-    width: 160,
+    width: 180,
     marginRight: 16,
     borderRadius: 12,
-    backgroundColor: "#f9f9f9",
     padding: 12,
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOpacity: 0.08,
-    shadowOffset: { width: 0, height: 1 },
-    shadowRadius: 3,
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
     elevation: 2,
   },
   productImage: {
-    width: 120,
-    height: 120,
+    width: "100%",
+    height: 130,
     borderRadius: 10,
     marginBottom: 10,
   },
   productName: {
-    fontSize: 15,
-    fontWeight: "500",
+    fontSize: 14,
+    fontWeight: "600",
     marginBottom: 4,
-    textAlign: "center",
   },
   productPrice: {
-    fontSize: 14,
-    color: "#2CB9B0",
+    fontSize: 16,
     fontWeight: "bold",
   },
+  oldPrice: {
+    fontSize: 14,
+    textDecorationLine: "line-through",
+    marginLeft: 6,
+  },
+  priceRow: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
 });
-
-export default HomeScreen;

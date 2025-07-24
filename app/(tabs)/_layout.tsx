@@ -20,7 +20,6 @@ export default function TabLayout() {
         tabBarBackground: TabBarBackground,
         tabBarStyle: Platform.select({
           ios: {
-            // Use a transparent background on iOS to show the blur effect
             position: "absolute",
           },
           default: {},
@@ -55,11 +54,11 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="FavoriteScreen"
+        name="OrderScreen"
         options={{
-          title: "Favorite",
+          title: "Orders",
           tabBarIcon: ({ color }) => (
-            <IconSymbol size={28} name="heart.fill" color={color} />
+            <IconSymbol size={28} name="cube.box.fill" color={color} />
           ),
         }}
       />
