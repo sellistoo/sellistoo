@@ -19,6 +19,12 @@ export const Colors = {
     input: "hsl(210, 20%, 90%)",
     cardBg: "hsl(0, 0%, 100%)",
     bannerBg: "hsl(210, 20%, 96%)",
+    errorBg: "#ff3b30",
+
+    success: "#16a34a",
+    info: "#2563eb",
+    warning: "#facc15",
+    purple: "#8b5cf6",
   },
 
   dark: {
@@ -37,5 +43,11 @@ export const Colors = {
     input: "hsl(0, 0%, 20%)",
     cardBg: "hsl(0, 0%, 12%)",
     bannerBg: "hsl(0, 0%, 14%)",
+    errorBg: "#ff453a",
+
+    success: "#22c55e",
+    info: "#3b82f6",
+    warning: "#fbbf24",
+    purple: "#a78bfa",
   },
 };

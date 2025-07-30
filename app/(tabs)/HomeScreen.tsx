@@ -13,6 +13,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 // Dummy Data
 const categories = [
@@ -68,125 +69,128 @@ export default function HomeScreen() {
   const theme = Colors[colorScheme ?? "light"];
 
   return (
-    <ScrollView
-      style={[styles.container, { backgroundColor: theme.background }]}
-      contentContainerStyle={{ paddingBottom: 40 }}
-    >
-      {/* Address Bar */}
-      <View
-        style={[styles.addressContainer, { backgroundColor: theme.secondary }]}
+    <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }}>
+      <ScrollView
+        style={{ flex: 1, backgroundColor: theme.background }}
+        contentContainerStyle={{ paddingBottom: 40 }}
       >
-        <TouchableOpacity
-          style={[styles.addressLeftIcon, { backgroundColor: theme.accent }]}
+        {/* Address Bar */}
+        <View
+          style={[
+            styles.addressContainer,
+            { backgroundColor: theme.secondary },
+          ]}
         >
-          <Ionicons name="location-outline" size={20} color={theme.text} />
-        </TouchableOpacity>
-        <View style={styles.addressContent}>
-          <Text style={[styles.addressLabel, { color: theme.mutedText }]}>
-            Deliver to
-          </Text>
-          <Text style={[styles.addressValue, { color: theme.text }]}>
-            92 High Street, London
-          </Text>
-        </View>
-        <TouchableOpacity style={styles.addressRightIcon}>
-          <Feather name="bell" size={20} color={theme.icon} />
-        </TouchableOpacity>
-      </View>
-
-      {/* Search Bar */}
-      <View style={styles.searchBarContainer}>
-        <View style={[styles.searchBar, { backgroundColor: theme.secondary }]}>
-          <Ionicons name="search" size={20} color={theme.icon} />
-          <TextInput
-            placeholder="Search for phones, laptops, accessories..."
-            placeholderTextColor={theme.icon}
-            style={[styles.searchInput, { color: theme.text }]}
-          />
-        </View>
-      </View>
-
-      {/* Banner */}
-      <BannerSlider banners={banners} />
-
-      {/* Categories */}
-      <View style={styles.sectionHeader}>
-        <Text style={[styles.sectionTitle, { color: theme.text }]}>
-          Categories
-        </Text>
-        <TouchableOpacity>
-          <Text style={[styles.seeAll, { color: theme.tint }]}>See all</Text>
-        </TouchableOpacity>
-      </View>
-      <FlatList
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        data={categories}
-        contentContainerStyle={styles.categoryList}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <View
-            style={[
-              styles.categoryCard,
-              { backgroundColor: theme.secondary, shadowColor: theme.border },
-            ]}
+          <TouchableOpacity
+            style={[styles.addressLeftIcon, { backgroundColor: theme.accent }]}
           >
-            <Text style={styles.categoryIcon}>{item.icon}</Text>
-            <Text style={[styles.categoryName, { color: theme.text }]}>
-              {item.name}
+            <Ionicons name="location-outline" size={20} color={theme.text} />
+          </TouchableOpacity>
+          <View style={styles.addressContent}>
+            <Text style={[styles.addressLabel, { color: theme.mutedText }]}>
+              Deliver to
+            </Text>
+            <Text style={[styles.addressValue, { color: theme.text }]}>
+              92 High Street, London
             </Text>
           </View>
-        )}
-      />
+          <TouchableOpacity style={styles.addressRightIcon}>
+            <Feather name="bell" size={20} color={theme.icon} />
+          </TouchableOpacity>
+        </View>
 
-      {/* Flash Sale */}
-      <View style={styles.sectionHeader}>
-        <Text style={[styles.sectionTitle, { color: theme.text }]}>
-          Flash Sale
-        </Text>
-        <TouchableOpacity>
-          <Text style={[styles.seeAll, { color: theme.tint }]}>See all</Text>
-        </TouchableOpacity>
-      </View>
-      <FlatList
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        data={flashSale}
-        contentContainerStyle={styles.flashList}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
+        {/* Search Bar */}
+        <View style={styles.searchBarContainer}>
           <View
-            style={[
-              styles.productCard,
-              {
-                backgroundColor: theme.cardBg,
-                shadowColor: theme.border,
-              },
-            ]}
+            style={[styles.searchBar, { backgroundColor: theme.secondary }]}
           >
-            <Image source={{ uri: item.image }} style={styles.productImage} />
-            <Text style={[styles.productName, { color: theme.text }]}>
-              {item.name}
-            </Text>
-            <View style={styles.priceRow}>
-              <Text style={[styles.productPrice, { color: theme.text }]}>
-                {item.price}
-              </Text>
-              <Text style={[styles.oldPrice, { color: theme.mutedText }]}>
-                {item.oldPrice}
+            <Ionicons name="search" size={20} color={theme.icon} />
+            <TextInput
+              placeholder="Search for phones, laptops, accessories..."
+              placeholderTextColor={theme.icon}
+              style={[styles.searchInput, { color: theme.text }]}
+            />
+          </View>
+        </View>
+
+        {/* Banner */}
+        <BannerSlider banners={banners} />
+
+        {/* Categories */}
+        <View style={styles.sectionHeader}>
+          <Text style={[styles.sectionTitle, { color: theme.text }]}>
+            Categories
+          </Text>
+          <TouchableOpacity>
+            <Text style={[styles.seeAll, { color: theme.tint }]}>See all</Text>
+          </TouchableOpacity>
+        </View>
+        <FlatList
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          data={categories}
+          contentContainerStyle={styles.categoryList}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => (
+            <View
+              style={[
+                styles.categoryCard,
+                { backgroundColor: theme.secondary, shadowColor: theme.border },
+              ]}
+            >
+              <Text style={styles.categoryIcon}>{item.icon}</Text>
+              <Text style={[styles.categoryName, { color: theme.text }]}>
+                {item.name}
               </Text>
             </View>
-          </View>
-        )}
-      />
-    </ScrollView>
+          )}
+        />
+
+        {/* Flash Sale */}
+        <View style={styles.sectionHeader}>
+          <Text style={[styles.sectionTitle, { color: theme.text }]}>
+            Flash Sale
+          </Text>
+          <TouchableOpacity>
+            <Text style={[styles.seeAll, { color: theme.tint }]}>See all</Text>
+          </TouchableOpacity>
+        </View>
+        <FlatList
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          data={flashSale}
+          contentContainerStyle={styles.flashList}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => (
+            <View
+              style={[
+                styles.productCard,
+                {
+                  backgroundColor: theme.cardBg,
+                  shadowColor: theme.border,
+                },
+              ]}
+            >
+              <Image source={{ uri: item.image }} style={styles.productImage} />
+              <Text style={[styles.productName, { color: theme.text }]}>
+                {item.name}
+              </Text>
+              <View style={styles.priceRow}>
+                <Text style={[styles.productPrice, { color: theme.text }]}>
+                  {item.price}
+                </Text>
+                <Text style={[styles.oldPrice, { color: theme.mutedText }]}>
+                  {item.oldPrice}
+                </Text>
+              </View>
+            </View>
+          )}
+        />
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    paddingTop: 50,
-  },
   addressContainer: {
     flexDirection: "row",
     alignItems: "center",

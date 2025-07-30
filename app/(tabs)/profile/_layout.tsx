@@ -1,0 +1,22 @@
+import { Stack } from "expo-router";
+
+export default function ProfileLayout() {
+  return (
+    <Stack>
+      <Stack.Screen
+        name="index"
+        options={{ title: "Profile", headerShown: false }}
+      />
+      <Stack.Screen
+        name="address/index"
+        options={{ title: "Manage Addresses" }}
+      />
+      <Stack.Screen name="orders/index" options={{ title: "Orders" }} />
+      <Stack.Screen name="favorites/index" options={{ title: "Favorites" }} />
+      <Stack.Screen
+        name="seller-dashboard/index"
+        options={{ title: "Seller Dashboard" }}
+      />
+    </Stack>
+  );
+}
