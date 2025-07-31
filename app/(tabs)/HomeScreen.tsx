@@ -1,7 +1,7 @@
 import BannerSlider from "@/components/BannerSlider";
 import { Colors } from "@/constants/Colors";
 import { useColorScheme } from "@/hooks/useColorScheme";
-import { Feather, Ionicons } from "@expo/vector-icons";
+import { Ionicons } from "@expo/vector-icons";
 import React from "react";
 import {
   FlatList,
@@ -94,9 +94,6 @@ export default function HomeScreen() {
               92 High Street, London
             </Text>
           </View>
-          <TouchableOpacity style={styles.addressRightIcon}>
-            <Feather name="bell" size={20} color={theme.icon} />
-          </TouchableOpacity>
         </View>
 
         {/* Search Bar */}
@@ -121,9 +118,6 @@ export default function HomeScreen() {
           <Text style={[styles.sectionTitle, { color: theme.text }]}>
             Categories
           </Text>
-          <TouchableOpacity>
-            <Text style={[styles.seeAll, { color: theme.tint }]}>See all</Text>
-          </TouchableOpacity>
         </View>
         <FlatList
           horizontal
@@ -151,9 +145,9 @@ export default function HomeScreen() {
           <Text style={[styles.sectionTitle, { color: theme.text }]}>
             Flash Sale
           </Text>
-          <TouchableOpacity>
+          {/* <TouchableOpacity>
             <Text style={[styles.seeAll, { color: theme.tint }]}>See all</Text>
-          </TouchableOpacity>
+          </TouchableOpacity> */}
         </View>
         <FlatList
           horizontal
@@ -195,16 +189,19 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     marginHorizontal: 16,
-    marginBottom: 16,
-    padding: 12,
+    marginTop: 8,
+    marginBottom: 8,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
     borderRadius: 12,
-    elevation: 2,
+    elevation: 1,
+    shadowColor: "#000",
     shadowOpacity: 0.05,
-    shadowRadius: 4,
+    shadowRadius: 2,
     shadowOffset: { width: 0, height: 1 },
   },
   addressLeftIcon: {
-    marginRight: 10,
+    marginRight: 12,
     padding: 8,
     borderRadius: 20,
   },
@@ -214,31 +211,28 @@ const styles = StyleSheet.create({
   addressLabel: {
     fontSize: 12,
     fontWeight: "500",
+    opacity: 0.7,
   },
   addressValue: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: "600",
-  },
-  addressRightIcon: {
-    marginLeft: "auto",
-    padding: 6,
   },
 
   searchBarContainer: {
     marginHorizontal: 16,
-    marginBottom: 20,
+    marginBottom: 24,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.07,
+    shadowRadius: 6,
+    elevation: 4,
   },
   searchBar: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    borderRadius: 30,
   },
   searchInput: {
     marginLeft: 10,
@@ -246,40 +240,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
 
-  bannerContainer: {
-    marginHorizontal: 16,
-    borderRadius: 12,
-    padding: 16,
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 20,
-  },
-  bannerText: {
-    fontSize: 16,
-    fontWeight: "500",
-  },
-  bannerImage: {
-    width: 70,
-    height: 70,
-    borderRadius: 12,
-    marginLeft: "auto",
-  },
-  discountBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    marginVertical: 4,
-    borderRadius: 6,
-  },
-  discountText: {
-    fontWeight: "600",
-    fontSize: 18,
-  },
-
   sectionHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     paddingHorizontal: 16,
-    marginBottom: 10,
+    marginBottom: 12,
+    marginTop: 8,
   },
   sectionTitle: {
     fontSize: 20,
@@ -288,52 +254,55 @@ const styles = StyleSheet.create({
   seeAll: {
     fontSize: 14,
     fontWeight: "500",
+    opacity: 0.9,
   },
 
   categoryList: {
     paddingLeft: 16,
-    paddingBottom: 16,
+    paddingBottom: 20,
   },
   categoryCard: {
     alignItems: "center",
     marginRight: 16,
-    padding: 12,
-    borderRadius: 12,
-    shadowOpacity: 0.05,
+    padding: 14,
+    borderRadius: 16,
+    shadowOpacity: 0.04,
     shadowRadius: 4,
-    shadowOffset: { width: 0, height: 1 },
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
   },
   categoryIcon: {
-    fontSize: 36,
-    marginBottom: 6,
+    fontSize: 34,
+    marginBottom: 4,
   },
   categoryName: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: "500",
   },
 
   flashList: {
     paddingLeft: 16,
-    paddingBottom: 30,
+    paddingBottom: 32,
   },
   productCard: {
-    width: 180,
+    width: 170,
     marginRight: 16,
-    borderRadius: 12,
+    borderRadius: 14,
     padding: 12,
-    shadowOpacity: 0.06,
-    shadowRadius: 4,
+    shadowColor: "#000",
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
     shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
+    elevation: 3,
   },
   productImage: {
     width: "100%",
     height: 130,
-    borderRadius: 10,
+    borderRadius: 12,
     marginBottom: 10,
   },
   productName: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: "600",
     marginBottom: 4,
   },
@@ -342,9 +311,10 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
   oldPrice: {
-    fontSize: 14,
+    fontSize: 13,
     textDecorationLine: "line-through",
     marginLeft: 6,
+    opacity: 0.6,
   },
   priceRow: {
     flexDirection: "row",

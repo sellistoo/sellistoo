@@ -1,3 +1,4 @@
+import { useColorScheme } from "@/hooks/useColorScheme";
 import {
   DarkTheme,
   DefaultTheme,
@@ -6,10 +7,9 @@ import {
 import { useFonts } from "expo-font";
 import { Slot } from "expo-router";
 import { StatusBar } from "expo-status-bar";
+import React from "react";
 import "react-native-reanimated";
 import { SafeAreaProvider } from "react-native-safe-area-context";
-
-import { useColorScheme } from "@/hooks/useColorScheme";
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
@@ -17,7 +17,9 @@ export default function RootLayout() {
     SpaceMono: require("../assets/fonts/SpaceMono-Regular.ttf"),
   });
 
-  if (!loaded) return null;
+  if (!loaded) {
+    return null; // or splash screen
+  }
 
   return (
     <SafeAreaProvider>

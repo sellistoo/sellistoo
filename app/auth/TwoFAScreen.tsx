@@ -1,6 +1,6 @@
 import axios from "axios";
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Alert,
   Keyboard,
@@ -15,38 +15,65 @@ import {
   View,
 } from "react-native";
 
-const ForgotPasswordScreen = () => {
-  const [email, setEmail] = useState("");
-  const [loading, setLoading] = useState(false);
+const TwoFAScreen = () => {
+  const [code, setCode] = useState("");
   const router = useRouter();
 
-  const handleSubmit = async () => {
+  const email =
+    typeof window !== "undefined"
+      ? localStorage.getItem("registerEmail")
+      : null;
+
+  useEffect(() => {
     if (!email) {
-      Alert.alert("Error", "Please enter your email address.");
+      router.replace("/auth/RegisterScreen");
+    }
+  }, [email]);
+
+  const handleVerify = async () => {
+    if (!code || !email) {
+      Alert.alert("Invalid Request", "Missing verification code or email.");
       return;
     }
 
     try {
-      setLoading(true);
       await axios.post(
-        `${process.env.EXPO_PUBLIC_API_BASE_URL}/auth/forgot-password`,
-        { email }
+        `${process.env.EXPO_PUBLIC_API_BASE_URL}/auth/register-verify`,
+        {
+          email,
+          otp: code,
+        }
       );
-
-      // Store email for reset screen
-      if (typeof window !== "undefined") {
-        localStorage.setItem("forgotEmail", email);
-      }
 
       Alert.alert(
-        "OTP Sent",
-        "A verification code has been sent to your email."
+        "Success",
+        "Verification successful! Redirecting to login..."
       );
-      router.push("/auth/ResetPasswordScreen");
+
+      localStorage.removeItem("registerEmail");
+      setTimeout(() => {
+        router.push("/auth/LoginScreen");
+      }, 1000);
     } catch (err: any) {
-      Alert.alert("Failed", err.response?.data?.error || "Unable to send OTP.");
-    } finally {
-      setLoading(false);
+      Alert.alert(
+        "Verification Failed",
+        err.response?.data?.error || "Invalid or expired code."
+      );
+    }
+  };
+
+  const handleResend = async () => {
+    try {
+      await axios.post(
+        `${process.env.EXPO_PUBLIC_API_BASE_URL}/auth/register-resend`,
+        { email }
+      );
+      Alert.alert("Success", "A new OTP has been sent to your email.");
+    } catch (err: any) {
+      Alert.alert(
+        "Error",
+        err.response?.data?.error || "Failed to resend OTP."
+      );
     }
   };
 
@@ -58,40 +85,28 @@ const ForgotPasswordScreen = () => {
           behavior={Platform.OS === "ios" ? "padding" : undefined}
         >
           <View style={styles.card}>
-            <Text style={styles.title}>Forgot Password</Text>
+            <Text style={styles.title}>Two-Factor Authentication</Text>
             <Text style={styles.subtitle}>
-              {
-                "Enter your registered email. We'll send you a 6-digit verification code."
-              }
+              Please enter the verification code sent to your email.
             </Text>
 
             <TextInput
               style={styles.input}
-              placeholder="you@example.com"
+              placeholder="Enter 6-digit code"
+              maxLength={6}
+              keyboardType="numeric"
+              value={code}
+              onChangeText={setCode}
               placeholderTextColor="#999"
-              keyboardType="email-address"
-              autoCapitalize="none"
-              value={email}
-              onChangeText={setEmail}
             />
 
-            <TouchableOpacity
-              style={[styles.button, loading && { opacity: 0.6 }]}
-              onPress={handleSubmit}
-              disabled={loading}
-            >
-              <Text style={styles.buttonText}>
-                {loading ? "Sending..." : "Send OTP"}
-              </Text>
+            <TouchableOpacity style={styles.button} onPress={handleVerify}>
+              <Text style={styles.buttonText}>Verify</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity
-              style={styles.link}
-              onPress={() => router.push("/auth/LoginScreen")}
-            >
-              <Text style={styles.linkText}>
-                Remember your password?{" "}
-                <Text style={styles.linkHighlight}>Go back to login</Text>
+            <TouchableOpacity style={styles.resend} onPress={handleResend}>
+              <Text style={styles.resendText}>
+                {"Didn't receive a code? Resend"}
               </Text>
             </TouchableOpacity>
           </View>
@@ -101,7 +116,7 @@ const ForgotPasswordScreen = () => {
   );
 };
 
-export default ForgotPasswordScreen;
+export default TwoFAScreen;
 
 const styles = StyleSheet.create({
   container: {
@@ -157,16 +172,13 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
   },
-  link: {
+  resend: {
     marginTop: 20,
     alignItems: "center",
   },
-  linkText: {
+  resendText: {
     fontSize: 14,
-    color: "#666",
-  },
-  linkHighlight: {
     color: "#00AA55",
-    fontWeight: "600",
+    fontWeight: "500",
   },
 });
