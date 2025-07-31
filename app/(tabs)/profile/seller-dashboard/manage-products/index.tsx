@@ -8,6 +8,7 @@ import {
   useWindowDimensions,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { SceneMap, TabView } from "react-native-tab-view";
 import ProductListScreen from "./ProductListScreen";
 import ProductUploadScreen from "./ProductUploadScreen";
@@ -58,19 +59,21 @@ const ManageProductsScreen = () => {
   );
 
   return (
-    <View style={{ flex: 1, backgroundColor: theme.background }}>
-      <Text style={[styles.header, { color: theme.text }]}>
-        Manage Products
-      </Text>
+    <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }}>
+      <View style={{ flex: 1, backgroundColor: theme.background }}>
+        <Text style={[styles.header, { color: theme.text }]}>
+          Manage Products
+        </Text>
 
-      <TabView
-        navigationState={{ index, routes }}
-        renderScene={renderScene}
-        renderTabBar={renderTabBar}
-        onIndexChange={setIndex}
-        initialLayout={{ width: layout.width }}
-      />
-    </View>
+        <TabView
+          navigationState={{ index, routes }}
+          renderScene={renderScene}
+          renderTabBar={renderTabBar}
+          onIndexChange={setIndex}
+          initialLayout={{ width: layout.width }}
+        />
+      </View>
+    </SafeAreaView>
   );
 };
 

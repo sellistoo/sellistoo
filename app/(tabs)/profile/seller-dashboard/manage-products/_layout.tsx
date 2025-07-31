@@ -1,15 +1,26 @@
 import { Stack } from "expo-router";
 
-export default function SellerDashboardLayout() {
+export default function ManageProductsLayout() {
   return (
     <Stack>
       <Stack.Screen
-        name="seller-dashboard/manage-products/index"
-        options={{ headerShown: false }}
+        name="index"
+        options={{
+          title: "Manage Products",
+          headerShown: true, // ✅ enable native header to show back button
+        }}
       />
       <Stack.Screen
-        name="manage-products"
-        options={{ title: "Manage Products" }}
+        name="ProductUploadScreen"
+        options={{
+          title: "Upload Product",
+        }}
+      />
+      <Stack.Screen
+        name="ProductListScreen"
+        options={{
+          title: "Product List",
+        }}
       />
     </Stack>
   );

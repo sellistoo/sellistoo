@@ -63,11 +63,6 @@ export default function SellerDashboardScreen() {
       description: "Process and manage orders.",
       onPress: () => router.push("/profile/orders"),
     },
-    {
-      title: "Payout Settings",
-      description: "Manage your payout and bank info.",
-      //   onPress: () => router.push("/profile/seller-dashboard/payout-settings"),
-    },
   ];
 
   return (
