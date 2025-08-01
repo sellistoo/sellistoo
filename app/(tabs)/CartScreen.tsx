@@ -5,8 +5,10 @@ import { Feather } from "@expo/vector-icons";
 import React from "react";
 import {
   Alert,
+  Dimensions,
   FlatList,
   Image,
+  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -14,10 +16,11 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+const { height } = Dimensions.get("window");
+
 export default function CartScreen() {
   const colorScheme = useColorScheme();
   const theme = Colors[colorScheme ?? "light"];
-
   const { cartItems, updateQuantity, removeFromCart, clearCart } = useCart();
 
   const handleClearCart = () => {
@@ -34,125 +37,149 @@ export default function CartScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }}>
-      <View
-        style={{
-          flex: 1,
-          backgroundColor: theme.background,
-          padding: 16,
-        }}
+      <ScrollView
+        style={{ flex: 1, backgroundColor: theme.background }}
+        contentContainerStyle={{ padding: 16 }}
       >
-        <Text style={[styles.title, { color: theme.text }]}>Shopping Cart</Text>
+        <View>
+          <Text style={[styles.title, { color: theme.text }]}>
+            Shopping Cart
+          </Text>
 
-        {cartItems.length === 0 ? (
-          <Text style={{ color: theme.mutedText }}>Your cart is empty.</Text>
-        ) : (
-          <>
-            <FlatList
-              data={cartItems}
-              keyExtractor={(item) => `${item.product}-${item.sku}`}
-              renderItem={({ item }) => (
+          {cartItems.length === 0 ? (
+            <Text style={{ color: theme.mutedText, marginTop: 20 }}>
+              Your cart is empty.
+            </Text>
+          ) : (
+            <>
+              {/* Sticky Bottom Bar - Always Visible */}
+              {cartItems.length > 0 && (
                 <View
                   style={[
-                    styles.item,
+                    styles.summaryBar,
                     {
                       backgroundColor: theme.cardBg,
                       shadowColor: theme.border,
                     },
                   ]}
                 >
-                  <Image source={{ uri: item.image }} style={styles.image} />
-                  <View style={styles.details}>
-                    <Text style={[styles.name, { color: theme.text }]}>
-                      {item.name}
+                  <View style={styles.summaryRow}>
+                    <Text style={[styles.totalText, { color: theme.text }]}>
+                      Total: ₹{total.toFixed(2)}
                     </Text>
-                    <Text style={{ color: theme.mutedText }}>
-                      ₹{item.price.toFixed(2)}
-                    </Text>
-                    {item.variant && (
-                      <Text
-                        style={[styles.variant, { color: theme.mutedText }]}
-                      >
-                        {item.variant.size && `Size: ${item.variant.size}`}
-                        {item.variant.color && `  Color: ${item.variant.color}`}
-                      </Text>
-                    )}
 
-                    <View style={styles.quantityRow}>
-                      <TouchableOpacity
-                        onPress={() =>
-                          updateQuantity(
-                            item.product,
-                            item.sku,
-                            item.quantity - 1
-                          )
-                        }
-                        disabled={item.quantity <= 1}
-                        style={[
-                          styles.qtyBtn,
-                          {
-                            backgroundColor: theme.accent,
-                            opacity: item.quantity <= 1 ? 0.5 : 1,
-                          },
-                        ]}
-                      >
-                        <Text style={styles.qtyText}>−</Text>
-                      </TouchableOpacity>
-                      <Text style={[styles.qtyCount, { color: theme.text }]}>
-                        {item.quantity}
+                    <TouchableOpacity
+                      onPress={handleClearCart}
+                      style={[
+                        styles.clearBtn,
+                        { backgroundColor: theme.errorBg },
+                      ]}
+                    >
+                      <Text style={{ color: "#fff", fontWeight: "600" }}>
+                        Clear
                       </Text>
-                      <TouchableOpacity
-                        onPress={() =>
-                          updateQuantity(
-                            item.product,
-                            item.sku,
-                            item.quantity + 1
-                          )
-                        }
-                        style={[
-                          styles.qtyBtn,
-                          { backgroundColor: theme.accent },
-                        ]}
-                      >
-                        <Text style={styles.qtyText}>+</Text>
-                      </TouchableOpacity>
-                    </View>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      style={[
+                        styles.checkoutBtn,
+                        { backgroundColor: theme.tint },
+                      ]}
+                      onPress={() => {
+                        // Navigate to checkout
+                      }}
+                    >
+                      <Text style={{ color: "#fff", fontWeight: "600" }}>
+                        Checkout
+                      </Text>
+                    </TouchableOpacity>
                   </View>
-                  <TouchableOpacity
-                    onPress={() => removeFromCart(item.product, item.sku)}
-                  >
-                    <Feather name="trash-2" size={18} color={theme.icon} />
-                  </TouchableOpacity>
                 </View>
               )}
-            />
-
-            {/* Total & Actions */}
-            <View style={styles.footer}>
-              <Text style={[styles.totalText, { color: theme.text }]}>
-                Total: ₹{total.toFixed(2)}
-              </Text>
-              <TouchableOpacity
-                onPress={handleClearCart}
-                style={[styles.clearBtn, { backgroundColor: theme.errorBg }]}
-              >
-                <Text style={{ color: "#fff", fontWeight: "600" }}>
-                  Clear Cart
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.checkoutBtn, { backgroundColor: theme.tint }]}
-                onPress={() => {
-                  // TODO: navigate to checkout screen
-                }}
-              >
-                <Text style={{ color: "#fff", fontWeight: "600" }}>
-                  Proceed to Checkout
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </>
-        )}
-      </View>
+              <FlatList
+                data={cartItems}
+                keyExtractor={(item) => `${item.product}-${item.sku}`}
+                contentContainerStyle={{ paddingBottom: 120 }}
+                showsVerticalScrollIndicator={false}
+                renderItem={({ item }) => (
+                  <View
+                    style={[
+                      styles.item,
+                      {
+                        backgroundColor: theme.cardBg,
+                        shadowColor: theme.border,
+                      },
+                    ]}
+                  >
+                    <Image source={{ uri: item.image }} style={styles.image} />
+                    <View style={styles.details}>
+                      <Text style={[styles.name, { color: theme.text }]}>
+                        {item.name}
+                      </Text>
+                      <Text style={{ color: theme.mutedText }}>
+                        ₹{item.price.toFixed(2)}
+                      </Text>
+                      {item.variant && (
+                        <Text
+                          style={[styles.variant, { color: theme.mutedText }]}
+                        >
+                          {item.variant.size && `Size: ${item.variant.size}`}
+                          {item.variant.color &&
+                            `  Color: ${item.variant.color}`}
+                        </Text>
+                      )}
+                      <View style={styles.quantityRow}>
+                        <TouchableOpacity
+                          onPress={() =>
+                            updateQuantity(
+                              item.product,
+                              item.sku,
+                              item.quantity - 1
+                            )
+                          }
+                          disabled={item.quantity <= 1}
+                          style={[
+                            styles.qtyBtn,
+                            {
+                              backgroundColor: theme.accent,
+                              opacity: item.quantity <= 1 ? 0.5 : 1,
+                            },
+                          ]}
+                        >
+                          <Text style={styles.qtyText}>−</Text>
+                        </TouchableOpacity>
+                        <Text style={[styles.qtyCount, { color: theme.text }]}>
+                          {item.quantity}
+                        </Text>
+                        <TouchableOpacity
+                          onPress={() =>
+                            updateQuantity(
+                              item.product,
+                              item.sku,
+                              item.quantity + 1
+                            )
+                          }
+                          style={[
+                            styles.qtyBtn,
+                            { backgroundColor: theme.accent },
+                          ]}
+                        >
+                          <Text style={styles.qtyText}>+</Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                    <TouchableOpacity
+                      onPress={() => removeFromCart(item.product, item.sku)}
+                    >
+                      <Feather name="trash-2" size={18} color={theme.icon} />
+                    </TouchableOpacity>
+                  </View>
+                )}
+              />
+            </>
+          )}
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -187,17 +214,26 @@ const styles = StyleSheet.create({
   },
   qtyText: { color: "#fff", fontSize: 16 },
   qtyCount: { marginHorizontal: 12, fontSize: 15 },
-  footer: { marginTop: 24 },
-  totalText: { fontSize: 18, fontWeight: "600", marginBottom: 12 },
-  clearBtn: {
-    padding: 12,
-    borderRadius: 8,
+
+  summaryBar: {
+    padding: 16,
+    marginBottom: 16,
+  },
+  summaryRow: {
+    flexDirection: "row",
     alignItems: "center",
-    marginBottom: 12,
+    justifyContent: "space-between",
+  },
+  totalText: { fontSize: 16, fontWeight: "600" },
+  clearBtn: {
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 6,
+    marginRight: 10,
   },
   checkoutBtn: {
-    padding: 14,
+    paddingVertical: 10,
+    paddingHorizontal: 18,
     borderRadius: 8,
-    alignItems: "center",
   },
 });
