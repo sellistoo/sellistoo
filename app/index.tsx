@@ -1,32 +1,30 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useUserInfo } from "@/hooks/useUserInfo";
 import { Redirect } from "expo-router";
-import { useEffect, useState } from "react";
-import { ActivityIndicator, View } from "react-native";
+import React from "react";
+import { ActivityIndicator, StyleSheet, View } from "react-native";
 
 export default function Index() {
-  const [isLoading, setIsLoading] = useState(true);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const { userInfo, hasRefreshed } = useUserInfo();
 
-  useEffect(() => {
-    const checkAuth = async () => {
-      const token = await AsyncStorage.getItem("token");
-      setIsAuthenticated(!!token);
-      setIsLoading(false);
-    };
-    checkAuth();
-  }, []);
-
-  if (isLoading) {
+  if (!hasRefreshed) {
     return (
-      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-        <ActivityIndicator size="large" />
+      <View style={styles.loaderContainer}>
+        <ActivityIndicator size="large" color="#00AA55" />
       </View>
     );
   }
 
-  return isAuthenticated ? (
+  return userInfo.isLoggedIn ? (
     <Redirect href="/(tabs)/HomeScreen" />
   ) : (
     <Redirect href="/auth/LoginScreen" />
   );
 }
+
+const styles = StyleSheet.create({
+  loaderContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+});

@@ -1,8 +1,9 @@
+import config from "@/config/config";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
-  Alert,
   Keyboard,
   KeyboardAvoidingView,
   Platform,
@@ -14,6 +15,7 @@ import {
   TouchableWithoutFeedback,
   View,
 } from "react-native";
+import Toast from "react-native-toast-message";
 
 const ResetPasswordScreen = () => {
   const [otp, setOtp] = useState("");
@@ -23,39 +25,60 @@ const ResetPasswordScreen = () => {
   const router = useRouter();
 
   useEffect(() => {
-    const storedEmail =
-      typeof window !== "undefined"
-        ? localStorage.getItem("forgotEmail")
-        : null;
-    if (!storedEmail) {
-      router.replace("/auth/ForgotPasswordScreen");
-    } else {
-      setEmail(storedEmail);
-    }
+    (async () => {
+      const storedEmail = await AsyncStorage.getItem("forgotEmail");
+      if (!storedEmail) {
+        router.replace("/auth/ForgotPasswordScreen");
+      } else {
+        setEmail(storedEmail);
+      }
+    })();
   }, []);
 
   const handleResetPassword = async () => {
     if (!otp || !newPassword || !confirmPassword) {
-      Alert.alert("Error", "All fields are required.");
+      Toast.show({
+        type: "error",
+        position: "top",
+        text1: "Error",
+        text2: "All fields are required.",
+      });
       return;
     }
 
     if (newPassword !== confirmPassword) {
-      Alert.alert("Error", "Passwords do not match.");
+      Toast.show({
+        type: "error",
+        position: "top",
+        text1: "Error",
+        text2: "Passwords do not match.",
+      });
       return;
     }
 
     try {
-      await axios.post(
-        `${process.env.EXPO_PUBLIC_API_BASE_URL}/auth/reset-password`,
-        { email, otp, newPassword }
-      );
+      await axios.post(`${config.apiUrl}/auth/reset-password`, {
+        email,
+        otp,
+        newPassword,
+      });
 
-      Alert.alert("Success", "Password reset successfully.");
-      localStorage.removeItem("forgotEmail");
-      router.replace("/auth/LoginScreen");
+      Toast.show({
+        type: "success",
+        position: "top",
+        text1: "Success",
+        text2: "Password reset successfully. Redirecting...",
+      });
+
+      await AsyncStorage.removeItem("forgotEmail");
+      setTimeout(() => router.replace("/auth/LoginScreen"), 1000);
     } catch (error: any) {
-      Alert.alert("Error", error?.response?.data?.error || "Reset failed.");
+      Toast.show({
+        type: "error",
+        position: "top",
+        text1: "Reset Failed",
+        text2: error?.response?.data?.error || "Invalid OTP or expired code.",
+      });
     }
   };
 
@@ -108,6 +131,9 @@ const ResetPasswordScreen = () => {
             </TouchableOpacity>
           </View>
         </KeyboardAvoidingView>
+
+        {/* Toast component */}
+        <Toast />
       </SafeAreaView>
     </TouchableWithoutFeedback>
   );

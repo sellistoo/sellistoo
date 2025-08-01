@@ -1,8 +1,9 @@
+import config from "@/config/config";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
-  Alert,
   Keyboard,
   KeyboardAvoidingView,
   Platform,
@@ -14,6 +15,7 @@ import {
   TouchableWithoutFeedback,
   View,
 } from "react-native";
+import Toast from "react-native-toast-message";
 
 const ForgotPasswordScreen = () => {
   const [email, setEmail] = useState("");
@@ -22,29 +24,37 @@ const ForgotPasswordScreen = () => {
 
   const handleSubmit = async () => {
     if (!email) {
-      Alert.alert("Error", "Please enter your email address.");
+      Toast.show({
+        type: "error",
+        position: "top",
+        text1: "Error",
+        text2: "Please enter your email address.",
+      });
       return;
     }
 
     try {
       setLoading(true);
-      await axios.post(
-        `${process.env.EXPO_PUBLIC_API_BASE_URL}/auth/forgot-password`,
-        { email }
-      );
 
-      // Store email for reset screen
-      if (typeof window !== "undefined") {
-        localStorage.setItem("forgotEmail", email);
-      }
+      await axios.post(`${config.apiUrl}/auth/forgot-password`, { email });
 
-      Alert.alert(
-        "OTP Sent",
-        "A verification code has been sent to your email."
-      );
+      await AsyncStorage.setItem("forgotEmail", email);
+
+      Toast.show({
+        type: "success",
+        position: "top",
+        text1: "OTP Sent",
+        text2: "A verification code has been sent to your email.",
+      });
+
       router.push("/auth/ResetPasswordScreen");
     } catch (err: any) {
-      Alert.alert("Failed", err.response?.data?.error || "Unable to send OTP.");
+      Toast.show({
+        type: "error",
+        position: "top",
+        text1: "Failed",
+        text2: err?.response?.data?.error || "Unable to send OTP.",
+      });
     } finally {
       setLoading(false);
     }
@@ -56,6 +66,7 @@ const ForgotPasswordScreen = () => {
         <KeyboardAvoidingView
           style={styles.inner}
           behavior={Platform.OS === "ios" ? "padding" : undefined}
+          keyboardVerticalOffset={Platform.OS === "ios" ? 60 : 0}
         >
           <View style={styles.card}>
             <Text style={styles.title}>Forgot Password</Text>
@@ -96,6 +107,9 @@ const ForgotPasswordScreen = () => {
             </TouchableOpacity>
           </View>
         </KeyboardAvoidingView>
+
+        {/* ✅ Make sure Toast is visible */}
+        {/* <Toast /> */}
       </SafeAreaView>
     </TouchableWithoutFeedback>
   );

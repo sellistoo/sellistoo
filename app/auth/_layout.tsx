@@ -12,24 +12,24 @@ const AuthLayout = () => {
         }}
       />
       <Stack.Screen name="RegisterScreen" options={{ headerShown: false }} />
+
+      {/* ✅ Make all these normal full screens instead of modals */}
       <Stack.Screen
         name="ForgotPasswordScreen"
-        options={{ presentation: "modal", title: "Forgot Password" }}
+        options={{ title: "Forgot Password", presentation: "card" }}
       />
       <Stack.Screen
         name="ResetPasswordScreen"
-        options={{
-          presentation: "modal",
-          title: "Reset Password",
-        }}
+        options={{ title: "Reset Password", presentation: "card" }}
       />
       <Stack.Screen
         name="TwoFAScreen"
         options={{
-          presentation: "modal",
           title: "Two-Factor Authentication",
+          presentation: "card",
         }}
       />
+
       <Stack.Screen name="TermsScreen" options={{ headerShown: false }} />
     </Stack>
   );
