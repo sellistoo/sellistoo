@@ -1,12 +1,12 @@
 import { Colors } from "@/constants/Colors";
+import { useCart } from "@/hooks/useCart";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { Feather } from "@expo/vector-icons";
-import React, { useState } from "react";
+import React from "react";
 import {
   Alert,
   FlatList,
   Image,
-  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -14,60 +14,16 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-interface CartItem {
-  product: string;
-  sku: string;
-  name: string;
-  image: string;
-  price: number;
-  quantity: number;
-  variant?: { size?: string; color?: string };
-}
-
-const initialCartItems: CartItem[] = [
-  {
-    product: "p1",
-    sku: "sku-p1",
-    name: "iPhone 15 Pro 128GB",
-    image:
-      "https://store.storeimages.cdn-apple.com/4668/as-images.apple.com/is/iphone-15-pro-model-select-202309?wid=470&hei=556&fmt=png-alpha&.v=1692923810002",
-    price: 699,
-    quantity: 1,
-    variant: { color: "Black", size: "128GB" },
-  },
-  {
-    product: "p2",
-    sku: "sku-p2",
-    name: "Samsung Galaxy Buds Pro",
-    image:
-      "https://images.samsung.com/is/image/samsung/assets/uk/audio/galaxy-buds/galaxy-buds-pro/galaxy-buds-pro_kv_mo.jpg",
-    price: 69,
-    quantity: 2,
-  },
-];
-
 export default function CartScreen() {
   const colorScheme = useColorScheme();
   const theme = Colors[colorScheme ?? "light"];
-  const [cartItems, setCartItems] = useState<CartItem[]>(initialCartItems);
 
-  const updateQuantity = (sku: string, newQty: number) => {
-    if (newQty <= 0) return;
-    setCartItems((prev) =>
-      prev.map((item) =>
-        item.sku === sku ? { ...item, quantity: newQty } : item
-      )
-    );
-  };
+  const { cartItems, updateQuantity, removeFromCart, clearCart } = useCart();
 
-  const removeItem = (sku: string) => {
-    setCartItems((prev) => prev.filter((item) => item.sku !== sku));
-  };
-
-  const clearCart = () => {
+  const handleClearCart = () => {
     Alert.alert("Clear Cart", "Are you sure you want to remove all items?", [
       { text: "Cancel", style: "cancel" },
-      { text: "Clear", onPress: () => setCartItems([]) },
+      { text: "Clear", onPress: () => clearCart() },
     ]);
   };
 
@@ -78,9 +34,12 @@ export default function CartScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }}>
-      <ScrollView
-        style={{ flex: 1, backgroundColor: theme.background }}
-        contentContainerStyle={{ padding: 16 }}
+      <View
+        style={{
+          flex: 1,
+          backgroundColor: theme.background,
+          padding: 16,
+        }}
       >
         <Text style={[styles.title, { color: theme.text }]}>Shopping Cart</Text>
 
@@ -90,7 +49,7 @@ export default function CartScreen() {
           <>
             <FlatList
               data={cartItems}
-              keyExtractor={(item) => item.sku}
+              keyExtractor={(item) => `${item.product}-${item.sku}`}
               renderItem={({ item }) => (
                 <View
                   style={[
@@ -107,7 +66,7 @@ export default function CartScreen() {
                       {item.name}
                     </Text>
                     <Text style={{ color: theme.mutedText }}>
-                      £{item.price.toFixed(2)}
+                      ₹{item.price.toFixed(2)}
                     </Text>
                     {item.variant && (
                       <Text
@@ -121,12 +80,19 @@ export default function CartScreen() {
                     <View style={styles.quantityRow}>
                       <TouchableOpacity
                         onPress={() =>
-                          updateQuantity(item.sku, item.quantity - 1)
+                          updateQuantity(
+                            item.product,
+                            item.sku,
+                            item.quantity - 1
+                          )
                         }
                         disabled={item.quantity <= 1}
                         style={[
                           styles.qtyBtn,
-                          { backgroundColor: theme.accent },
+                          {
+                            backgroundColor: theme.accent,
+                            opacity: item.quantity <= 1 ? 0.5 : 1,
+                          },
                         ]}
                       >
                         <Text style={styles.qtyText}>−</Text>
@@ -136,7 +102,11 @@ export default function CartScreen() {
                       </Text>
                       <TouchableOpacity
                         onPress={() =>
-                          updateQuantity(item.sku, item.quantity + 1)
+                          updateQuantity(
+                            item.product,
+                            item.sku,
+                            item.quantity + 1
+                          )
                         }
                         style={[
                           styles.qtyBtn,
@@ -147,7 +117,9 @@ export default function CartScreen() {
                       </TouchableOpacity>
                     </View>
                   </View>
-                  <TouchableOpacity onPress={() => removeItem(item.sku)}>
+                  <TouchableOpacity
+                    onPress={() => removeFromCart(item.product, item.sku)}
+                  >
                     <Feather name="trash-2" size={18} color={theme.icon} />
                   </TouchableOpacity>
                 </View>
@@ -157,10 +129,10 @@ export default function CartScreen() {
             {/* Total & Actions */}
             <View style={styles.footer}>
               <Text style={[styles.totalText, { color: theme.text }]}>
-                Total: £{total.toFixed(2)}
+                Total: ₹{total.toFixed(2)}
               </Text>
               <TouchableOpacity
-                onPress={clearCart}
+                onPress={handleClearCart}
                 style={[styles.clearBtn, { backgroundColor: theme.errorBg }]}
               >
                 <Text style={{ color: "#fff", fontWeight: "600" }}>
@@ -170,7 +142,7 @@ export default function CartScreen() {
               <TouchableOpacity
                 style={[styles.checkoutBtn, { backgroundColor: theme.tint }]}
                 onPress={() => {
-                  // Redirect to checkout
+                  // TODO: navigate to checkout screen
                 }}
               >
                 <Text style={{ color: "#fff", fontWeight: "600" }}>
@@ -180,7 +152,7 @@ export default function CartScreen() {
             </View>
           </>
         )}
-      </ScrollView>
+      </View>
     </SafeAreaView>
   );
 }
