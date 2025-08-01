@@ -1,3 +1,4 @@
+import { useUserInfo } from "@/hooks/useUserInfo";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
@@ -6,6 +7,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   SafeAreaView,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -13,103 +15,140 @@ import {
   TouchableWithoutFeedback,
   View,
 } from "react-native";
+import Toast from "react-native-toast-message";
 
 const LoginScreen = () => {
   const router = useRouter();
+  const { login } = useUserInfo();
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPass, setShowPass] = useState(false);
 
-  const handleLogin = () => {
-    console.log("Email:", email);
-    console.log("Password:", password);
+  const handleLogin = async () => {
+    if (!email || !password) {
+      Toast.show({
+        type: "error",
+        text1: "Missing Fields",
+        text2: "Please enter both email and password.",
+      });
+      return;
+    }
+
+    try {
+      await login({ email, password });
+
+      Toast.show({
+        type: "success",
+        text1: "Login Successful",
+        text2: `Welcome back, ${email} 👋`,
+      });
+
+      router.replace("/(tabs)/HomeScreen");
+    } catch (error: any) {
+      Toast.show({
+        type: "error",
+        text1: "Login Failed",
+        text2: error.message || "Something went wrong.",
+      });
+    }
   };
 
   return (
-    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-      <SafeAreaView style={styles.container}>
-        <KeyboardAvoidingView
-          style={styles.wrapper}
-          behavior={Platform.OS === "ios" ? "padding" : undefined}
-        >
-          {/* Branding */}
-          <Text style={styles.brand}>Sellistoo</Text>
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+    >
+      <ScrollView
+        contentContainerStyle={{ flexGrow: 1 }}
+        keyboardShouldPersistTaps="handled"
+      >
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+          <SafeAreaView style={styles.container}>
+            <View style={styles.wrapper}>
+              <Text style={styles.brand}>Sellistoo</Text>
+              <Text style={styles.title}>Welcome Back 👋</Text>
 
-          {/* Professional Welcome Text */}
-          <Text style={styles.title}>Welcome Back 👋</Text>
+              {/* Email input */}
+              <View style={styles.inputContainer}>
+                <TextInput
+                  placeholder="Email"
+                  placeholderTextColor="#999"
+                  style={styles.input}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  onChangeText={setEmail}
+                  value={email}
+                />
+              </View>
 
-          {/* Inputs */}
-          <View style={styles.inputContainer}>
-            <TextInput
-              placeholder="Email"
-              placeholderTextColor="#999"
-              style={styles.input}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              onChangeText={setEmail}
-              value={email}
-            />
-          </View>
+              {/* Password input */}
+              <View style={styles.inputContainer}>
+                <TextInput
+                  placeholder="Password"
+                  placeholderTextColor="#999"
+                  style={styles.input}
+                  secureTextEntry={!showPass}
+                  autoCapitalize="none"
+                  onChangeText={setPassword}
+                  value={password}
+                />
+                <TouchableOpacity
+                  onPress={() => setShowPass(!showPass)}
+                  style={styles.icon}
+                >
+                  <Ionicons
+                    name={showPass ? "eye-off" : "eye"}
+                    size={20}
+                    color="#999"
+                  />
+                </TouchableOpacity>
+              </View>
 
-          <View style={styles.inputContainer}>
-            <TextInput
-              placeholder="Password"
-              placeholderTextColor="#999"
-              style={styles.input}
-              secureTextEntry={!showPass}
-              autoCapitalize="none"
-              onChangeText={setPassword}
-              value={password}
-            />
-            <TouchableOpacity
-              onPress={() => setShowPass(!showPass)}
-              style={styles.icon}
-            >
-              <Ionicons
-                name={showPass ? "eye-off" : "eye"}
-                size={20}
-                color="#999"
-              />
-            </TouchableOpacity>
-          </View>
+              <TouchableOpacity style={styles.button} onPress={handleLogin}>
+                <Text style={styles.buttonText}>Log In</Text>
+              </TouchableOpacity>
 
-          <TouchableOpacity style={styles.button} onPress={handleLogin}>
-            <Text style={styles.buttonText}>Log In</Text>
-          </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.link}
+                onPress={() => router.push("/auth/ForgotPasswordScreen")}
+              >
+                <Text style={styles.linkText}>Forgot your password?</Text>
+              </TouchableOpacity>
 
-          <TouchableOpacity
-            style={styles.link}
-            onPress={() => router.push("/auth/ForgotPasswordScreen")}
-          >
-            <Text style={styles.linkText}>Forgot your password?</Text>
-          </TouchableOpacity>
+              <View style={styles.divider}>
+                <View style={styles.line} />
+                <Text style={styles.dividerText}>or</Text>
+                <View style={styles.line} />
+              </View>
 
-          <View style={styles.divider}>
-            <View style={styles.line} />
-            <Text style={styles.dividerText}>or</Text>
-            <View style={styles.line} />
-          </View>
-
-          <TouchableOpacity
-            style={styles.createAccount}
-            onPress={() => router.push("/auth/RegisterScreen")}
-          >
-            <Text style={styles.createAccountText}>
-              Don’t have an account?{" "}
-              <Text style={styles.createAccountLink}>Create one</Text>
-            </Text>
-          </TouchableOpacity>
-        </KeyboardAvoidingView>
-      </SafeAreaView>
-    </TouchableWithoutFeedback>
+              <TouchableOpacity
+                style={styles.createAccount}
+                onPress={() => router.push("/auth/RegisterScreen")}
+              >
+                <Text style={styles.createAccountText}>
+                  Don’t have an account?{" "}
+                  <Text style={styles.createAccountLink}>Create one</Text>
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </SafeAreaView>
+        </TouchableWithoutFeedback>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 };
+
 export default LoginScreen;
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#fff",
+  },
+  scroll: {
+    flexGrow: 1,
+    justifyContent: "center",
   },
   wrapper: {
     flex: 1,
