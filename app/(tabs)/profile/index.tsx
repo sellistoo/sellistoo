@@ -1,4 +1,5 @@
 import { Colors } from "@/constants/Colors";
+import { useUserInfo } from "@/hooks/useUserInfo";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React from "react";
@@ -12,20 +13,42 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import Toast from "react-native-toast-message";
 
 export default function ProfileScreen() {
   const colorScheme = useColorScheme();
   const theme = Colors[colorScheme ?? "light"];
   const router = useRouter();
+  const { userInfo, logout } = useUserInfo();
 
   const handleLogout = () => {
     Alert.alert("Confirm Logout", "Are you sure you want to logout?", [
       { text: "Cancel", style: "cancel" },
+      {
+        text: "Logout",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            await logout();
+            Toast.show({
+              type: "success",
+              text1: "Logged out successfully",
+            });
+            router.replace("/auth/LoginScreen");
+          } catch (err) {
+            Toast.show({
+              type: "error",
+              text1: "Logout failed",
+              text2: "Please try again",
+            });
+          }
+        },
+      },
     ]);
   };
 
-  const isSeller = true;
-  const isAdmin = true;
+  const isSeller = userInfo?.role === "seller";
+  const isAdmin = userInfo?.role === "admin";
 
   const SectionButton = ({
     icon,
@@ -92,7 +115,7 @@ export default function ProfileScreen() {
         >
           <Text style={[styles.label, { color: theme.mutedText }]}>Name</Text>
           <Text style={[styles.value, { color: theme.text }]}>
-            {/* Placeholder for user name */}
+            {userInfo.name || "—"}
           </Text>
           <Text
             style={[styles.label, { color: theme.mutedText, marginTop: 10 }]}
@@ -100,7 +123,7 @@ export default function ProfileScreen() {
             Email
           </Text>
           <Text style={[styles.value, { color: theme.text }]}>
-            {/* Placeholder for email */}
+            {userInfo.email || "—"}
           </Text>
         </View>
 
@@ -123,13 +146,22 @@ export default function ProfileScreen() {
           subtitle="See your saved items"
           href="/(tabs)/profile/favorites"
         />
-        {/* Conditional cards */}
+
         {isSeller && (
           <SectionButton
             icon="storefront-outline"
             title="Seller Dashboard"
             subtitle="Manage your products and orders"
             href="/(tabs)/profile/seller-dashboard"
+          />
+        )}
+
+        {isAdmin && (
+          <SectionButton
+            icon="shield-checkmark-outline"
+            title="Admin Panel"
+            subtitle="Manage users, products & orders"
+            href="/(tabs)/profile/admin-dashboard"
           />
         )}
       </ScrollView>
