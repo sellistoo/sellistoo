@@ -1,4 +1,6 @@
 import config from "@/config/config";
+import { Colors } from "@/constants/Colors";
+import { useColorScheme } from "@/hooks/useColorScheme";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import { useRouter } from "expo-router";
@@ -21,6 +23,7 @@ const TwoFAScreen = () => {
   const [code, setCode] = useState("");
   const [email, setEmail] = useState<string | null>(null);
   const router = useRouter();
+  const theme = Colors[useColorScheme() ?? "light"];
 
   useEffect(() => {
     (async () => {
@@ -91,41 +94,54 @@ const TwoFAScreen = () => {
 
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView
+        style={[styles.container, { backgroundColor: theme.background }]}
+      >
         <KeyboardAvoidingView
           style={styles.inner}
           behavior={Platform.OS === "ios" ? "padding" : undefined}
           keyboardVerticalOffset={Platform.OS === "ios" ? 60 : 0}
         >
-          <View style={styles.card}>
-            <Text style={styles.title}>Two-Factor Authentication</Text>
-            <Text style={styles.subtitle}>
+          <View style={[styles.card, { backgroundColor: theme.cardBg }]}>
+            <Text style={[styles.title, { color: theme.text }]}>
+              Two-Factor Authentication
+            </Text>
+            <Text style={[styles.subtitle, { color: theme.mutedText }]}>
               Please enter the verification code sent to your email.
             </Text>
 
             <TextInput
-              style={styles.input}
+              style={[
+                styles.input,
+                {
+                  backgroundColor: theme.input,
+                  color: theme.text,
+                  borderColor: theme.border,
+                },
+              ]}
               placeholder="Enter 6-digit code"
+              placeholderTextColor={theme.mutedText}
               maxLength={6}
               keyboardType="numeric"
               value={code}
               onChangeText={setCode}
-              placeholderTextColor="#999"
             />
 
-            <TouchableOpacity style={styles.button} onPress={handleVerify}>
+            <TouchableOpacity
+              style={[styles.button, { backgroundColor: theme.tint }]}
+              onPress={handleVerify}
+            >
               <Text style={styles.buttonText}>Verify</Text>
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.resend} onPress={handleResend}>
-              <Text style={styles.resendText}>
+              <Text style={[styles.resendText, { color: theme.tint }]}>
                 {"Didn't receive a code? Resend"}
               </Text>
             </TouchableOpacity>
           </View>
         </KeyboardAvoidingView>
 
-        {/*  Toast should be placed at the bottom to ensure visibility */}
         <Toast />
       </SafeAreaView>
     </TouchableWithoutFeedback>
@@ -137,7 +153,6 @@ export default TwoFAScreen;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f9f9f9",
   },
   inner: {
     flex: 1,
@@ -145,7 +160,6 @@ const styles = StyleSheet.create({
     padding: 24,
   },
   card: {
-    backgroundColor: "#fff",
     padding: 24,
     borderRadius: 12,
     shadowColor: "#000",
@@ -159,26 +173,20 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     marginBottom: 10,
     textAlign: "center",
-    color: "#222",
   },
   subtitle: {
     fontSize: 14,
-    color: "#666",
     marginBottom: 20,
     textAlign: "center",
   },
   input: {
     borderWidth: 1,
-    borderColor: "#ddd",
     borderRadius: 8,
     padding: 14,
     fontSize: 16,
-    backgroundColor: "#f1f1f1",
     marginBottom: 20,
-    color: "#222",
   },
   button: {
-    backgroundColor: "#00AA55",
     borderRadius: 8,
     paddingVertical: 14,
     alignItems: "center",
@@ -194,7 +202,6 @@ const styles = StyleSheet.create({
   },
   resendText: {
     fontSize: 14,
-    color: "#00AA55",
     fontWeight: "500",
   },
 });

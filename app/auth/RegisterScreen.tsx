@@ -1,4 +1,6 @@
 import config from "@/config/config";
+import { Colors } from "@/constants/Colors";
+import { useColorScheme } from "@/hooks/useColorScheme";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import Checkbox from "expo-checkbox";
@@ -28,6 +30,7 @@ const RegisterScreen = () => {
   const [password, setPassword] = useState("");
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [loading, setLoading] = useState(false);
+  const theme = Colors[useColorScheme() ?? "light"];
 
   const handleRegister = async () => {
     if (!name || !email || !phoneNumber || !password) {
@@ -90,7 +93,9 @@ const RegisterScreen = () => {
 
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView
+        style={[styles.container, { backgroundColor: theme.background }]}
+      >
         <KeyboardAvoidingView
           style={{ flex: 1 }}
           behavior={Platform.OS === "ios" ? "padding" : undefined}
@@ -99,13 +104,18 @@ const RegisterScreen = () => {
             contentContainerStyle={styles.scroll}
             keyboardShouldPersistTaps="handled"
           >
-            <Text style={styles.title}>Create Account</Text>
+            <Text style={[styles.title, { color: theme.text }]}>
+              Create Account
+            </Text>
 
             <View style={styles.inputGroup}>
               <TextInput
-                style={styles.input}
+                style={[
+                  styles.input,
+                  { backgroundColor: theme.input, color: theme.text },
+                ]}
                 placeholder="Full Name"
-                placeholderTextColor="#999"
+                placeholderTextColor={theme.mutedText}
                 onChangeText={setName}
                 value={name}
                 textContentType="name"
@@ -115,9 +125,12 @@ const RegisterScreen = () => {
 
             <View style={styles.inputGroup}>
               <TextInput
-                style={styles.input}
+                style={[
+                  styles.input,
+                  { backgroundColor: theme.input, color: theme.text },
+                ]}
                 placeholder="Email"
-                placeholderTextColor="#999"
+                placeholderTextColor={theme.mutedText}
                 keyboardType="email-address"
                 autoCapitalize="none"
                 onChangeText={setEmail}
@@ -129,9 +142,12 @@ const RegisterScreen = () => {
 
             <View style={styles.inputGroup}>
               <TextInput
-                style={styles.input}
+                style={[
+                  styles.input,
+                  { backgroundColor: theme.input, color: theme.text },
+                ]}
                 placeholder="Phone Number"
-                placeholderTextColor="#999"
+                placeholderTextColor={theme.mutedText}
                 keyboardType="numeric"
                 maxLength={10}
                 value={phoneNumber}
@@ -143,14 +159,19 @@ const RegisterScreen = () => {
                 textContentType="telephoneNumber"
                 autoComplete="tel"
               />
-              <Text style={styles.helperText}>Must be exactly 10 digits</Text>
+              <Text style={[styles.helperText, { color: theme.mutedText }]}>
+                Must be exactly 10 digits
+              </Text>
             </View>
 
             <View style={styles.inputGroup}>
               <TextInput
-                style={styles.input}
+                style={[
+                  styles.input,
+                  { backgroundColor: theme.input, color: theme.text },
+                ]}
                 placeholder="Password"
-                placeholderTextColor="#999"
+                placeholderTextColor={theme.mutedText}
                 secureTextEntry
                 onChangeText={setPassword}
                 value={password}
@@ -164,12 +185,12 @@ const RegisterScreen = () => {
               <Checkbox
                 value={acceptTerms}
                 onValueChange={setAcceptTerms}
-                color={acceptTerms ? "#007bff" : undefined}
+                color={acceptTerms ? theme.tint : undefined}
               />
-              <Text style={styles.termsText}>
+              <Text style={[styles.termsText, { color: theme.text }]}>
                 {"  "}I agree to{" "}
                 <Text
-                  style={styles.linkHighlight}
+                  style={[styles.linkHighlight, { color: theme.tint }]}
                   onPress={() => router.push("/auth/TermsScreen")}
                 >
                   Terms & Conditions
@@ -178,7 +199,11 @@ const RegisterScreen = () => {
             </View>
 
             <TouchableOpacity
-              style={[styles.button, !acceptTerms && { opacity: 0.5 }]}
+              style={[
+                styles.button,
+                { backgroundColor: theme.tint },
+                !acceptTerms && { opacity: 0.5 },
+              ]}
               onPress={handleRegister}
               disabled={loading || !acceptTerms}
             >
@@ -193,9 +218,11 @@ const RegisterScreen = () => {
               style={styles.link}
               onPress={() => router.replace("/auth/LoginScreen")}
             >
-              <Text style={styles.linkText}>
+              <Text style={[styles.linkText, { color: theme.text }]}>
                 Already have an account?{" "}
-                <Text style={styles.linkHighlight}>Log In</Text>
+                <Text style={[styles.linkHighlight, { color: theme.tint }]}>
+                  Log In
+                </Text>
               </Text>
             </TouchableOpacity>
           </ScrollView>
@@ -210,7 +237,6 @@ export default RegisterScreen;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
   },
   scroll: {
     padding: 24,
@@ -221,23 +247,19 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: "700",
     marginBottom: 24,
-    color: "#222",
     textAlign: "center",
   },
   inputGroup: {
     marginBottom: 18,
   },
   input: {
-    backgroundColor: "#f1f1f1",
     borderRadius: 10,
     paddingHorizontal: 15,
     height: 50,
     fontSize: 16,
-    color: "#222",
   },
   helperText: {
     fontSize: 12,
-    color: "#888",
     marginTop: 5,
     marginLeft: 5,
   },
@@ -248,16 +270,13 @@ const styles = StyleSheet.create({
   },
   termsText: {
     fontSize: 14,
-    color: "#444",
     flexShrink: 1,
   },
   button: {
-    backgroundColor: "#007bff",
     paddingVertical: 14,
     borderRadius: 10,
     alignItems: "center",
     marginTop: 8,
-    shadowColor: "#007bff",
     shadowOpacity: 0.2,
     shadowOffset: { width: 0, height: 4 },
     shadowRadius: 6,
@@ -274,10 +293,8 @@ const styles = StyleSheet.create({
   },
   linkText: {
     fontSize: 14,
-    color: "#444",
   },
   linkHighlight: {
-    color: "#007bff",
     fontWeight: "600",
   },
 });

@@ -1,3 +1,5 @@
+import { Colors } from "@/constants/Colors";
+import { useColorScheme } from "@/hooks/useColorScheme";
 import { useUserInfo } from "@/hooks/useUserInfo";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
@@ -18,6 +20,9 @@ import {
 import Toast from "react-native-toast-message";
 
 const LoginScreen = () => {
+  const colorScheme = useColorScheme();
+  const theme = Colors[colorScheme ?? "light"];
+
   const router = useRouter();
   const { login } = useUserInfo();
 
@@ -64,17 +69,27 @@ const LoginScreen = () => {
         keyboardShouldPersistTaps="handled"
       >
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-          <SafeAreaView style={styles.container}>
-            <View style={styles.wrapper}>
-              <Text style={styles.brand}>Sellistoo</Text>
-              <Text style={styles.title}>Welcome Back 👋</Text>
+          <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }}>
+            <View style={{ flex: 1, padding: 24, justifyContent: "center" }}>
+              <Text style={[styles.brand, { color: theme.accent }]}>
+                Sellistoo
+              </Text>
+              <Text style={[styles.title, { color: theme.text }]}>
+                Welcome Back 👋
+              </Text>
 
               {/* Email input */}
               <View style={styles.inputContainer}>
                 <TextInput
                   placeholder="Email"
-                  placeholderTextColor="#999"
-                  style={styles.input}
+                  placeholderTextColor={theme.mutedText}
+                  style={[
+                    styles.input,
+                    {
+                      backgroundColor: theme.input,
+                      color: theme.text,
+                    },
+                  ]}
                   keyboardType="email-address"
                   autoCapitalize="none"
                   onChangeText={setEmail}
@@ -86,8 +101,14 @@ const LoginScreen = () => {
               <View style={styles.inputContainer}>
                 <TextInput
                   placeholder="Password"
-                  placeholderTextColor="#999"
-                  style={styles.input}
+                  placeholderTextColor={theme.mutedText}
+                  style={[
+                    styles.input,
+                    {
+                      backgroundColor: theme.input,
+                      color: theme.text,
+                    },
+                  ]}
                   secureTextEntry={!showPass}
                   autoCapitalize="none"
                   onChangeText={setPassword}
@@ -100,12 +121,15 @@ const LoginScreen = () => {
                   <Ionicons
                     name={showPass ? "eye-off" : "eye"}
                     size={20}
-                    color="#999"
+                    color={theme.icon}
                   />
                 </TouchableOpacity>
               </View>
 
-              <TouchableOpacity style={styles.button} onPress={handleLogin}>
+              <TouchableOpacity
+                style={[styles.button, { backgroundColor: theme.tint }]}
+                onPress={handleLogin}
+              >
                 <Text style={styles.buttonText}>Log In</Text>
               </TouchableOpacity>
 
@@ -113,22 +137,32 @@ const LoginScreen = () => {
                 style={styles.link}
                 onPress={() => router.push("/auth/ForgotPasswordScreen")}
               >
-                <Text style={styles.linkText}>Forgot your password?</Text>
+                <Text style={[styles.linkText, { color: theme.tint }]}>
+                  Forgot your password?
+                </Text>
               </TouchableOpacity>
 
               <View style={styles.divider}>
-                <View style={styles.line} />
-                <Text style={styles.dividerText}>or</Text>
-                <View style={styles.line} />
+                <View
+                  style={[styles.line, { backgroundColor: theme.border }]}
+                />
+                <Text style={[styles.dividerText, { color: theme.mutedText }]}>
+                  or
+                </Text>
+                <View
+                  style={[styles.line, { backgroundColor: theme.border }]}
+                />
               </View>
 
               <TouchableOpacity
                 style={styles.createAccount}
                 onPress={() => router.push("/auth/RegisterScreen")}
               >
-                <Text style={styles.createAccountText}>
+                <Text style={[styles.createAccountText, { color: theme.text }]}>
                   Don’t have an account?{" "}
-                  <Text style={styles.createAccountLink}>Create one</Text>
+                  <Text style={{ color: theme.tint, fontWeight: "600" }}>
+                    Create one
+                  </Text>
                 </Text>
               </TouchableOpacity>
             </View>
@@ -142,23 +176,9 @@ const LoginScreen = () => {
 export default LoginScreen;
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#fff",
-  },
-  scroll: {
-    flexGrow: 1,
-    justifyContent: "center",
-  },
-  wrapper: {
-    flex: 1,
-    padding: 24,
-    justifyContent: "center",
-  },
   brand: {
     fontSize: 26,
     fontWeight: "700",
-    color: "#00AA55",
     textAlign: "center",
     marginBottom: 8,
     letterSpacing: 0.5,
@@ -166,7 +186,6 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: "500",
-    color: "#222",
     marginBottom: 28,
     textAlign: "center",
   },
@@ -175,12 +194,10 @@ const styles = StyleSheet.create({
     marginBottom: 18,
   },
   input: {
-    backgroundColor: "#f1f1f1",
     height: 50,
     borderRadius: 10,
     paddingHorizontal: 16,
     fontSize: 16,
-    color: "#222",
   },
   icon: {
     position: "absolute",
@@ -188,17 +205,11 @@ const styles = StyleSheet.create({
     top: 15,
   },
   button: {
-    backgroundColor: "#00AA55",
     height: 50,
     borderRadius: 10,
     justifyContent: "center",
     alignItems: "center",
     marginTop: 12,
-    shadowColor: "#00AA55",
-    shadowOpacity: 0.3,
-    shadowOffset: { width: 0, height: 4 },
-    shadowRadius: 6,
-    elevation: 3,
   },
   buttonText: {
     color: "#fff",
@@ -210,7 +221,6 @@ const styles = StyleSheet.create({
     alignSelf: "center",
   },
   linkText: {
-    color: "#00AA55",
     fontSize: 14,
   },
   divider: {
@@ -221,22 +231,15 @@ const styles = StyleSheet.create({
   line: {
     flex: 1,
     height: 1,
-    backgroundColor: "#ddd",
   },
   dividerText: {
     marginHorizontal: 12,
     fontSize: 14,
-    color: "#999",
   },
   createAccount: {
     alignSelf: "center",
   },
   createAccountText: {
     fontSize: 15,
-    color: "#444",
-  },
-  createAccountLink: {
-    color: "#00AA55",
-    fontWeight: "600",
   },
 });

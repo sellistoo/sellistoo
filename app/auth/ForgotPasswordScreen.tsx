@@ -1,4 +1,6 @@
 import config from "@/config/config";
+import { Colors } from "@/constants/Colors";
+import { useColorScheme } from "@/hooks/useColorScheme";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import { useRouter } from "expo-router";
@@ -21,6 +23,8 @@ const ForgotPasswordScreen = () => {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const colorScheme = useColorScheme();
+  const theme = Colors[colorScheme ?? "light"];
 
   const handleSubmit = async () => {
     if (!email) {
@@ -35,7 +39,6 @@ const ForgotPasswordScreen = () => {
 
     try {
       setLoading(true);
-
       await axios.post(`${config.apiUrl}/auth/forgot-password`, { email });
 
       await AsyncStorage.setItem("forgotEmail", email);
@@ -62,24 +65,40 @@ const ForgotPasswordScreen = () => {
 
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView
+        style={[styles.container, { backgroundColor: theme.background }]}
+      >
         <KeyboardAvoidingView
           style={styles.inner}
           behavior={Platform.OS === "ios" ? "padding" : undefined}
           keyboardVerticalOffset={Platform.OS === "ios" ? 60 : 0}
         >
-          <View style={styles.card}>
-            <Text style={styles.title}>Forgot Password</Text>
-            <Text style={styles.subtitle}>
+          <View
+            style={[
+              styles.card,
+              { backgroundColor: theme.cardBg, shadowColor: theme.text },
+            ]}
+          >
+            <Text style={[styles.title, { color: theme.text }]}>
+              Forgot Password
+            </Text>
+            <Text style={[styles.subtitle, { color: theme.mutedText }]}>
               {
                 "Enter your registered email. We'll send you a 6-digit verification code."
               }
             </Text>
 
             <TextInput
-              style={styles.input}
+              style={[
+                styles.input,
+                {
+                  backgroundColor: theme.input,
+                  borderColor: theme.border,
+                  color: theme.text,
+                },
+              ]}
               placeholder="you@example.com"
-              placeholderTextColor="#999"
+              placeholderTextColor={theme.mutedText}
               keyboardType="email-address"
               autoCapitalize="none"
               value={email}
@@ -87,7 +106,11 @@ const ForgotPasswordScreen = () => {
             />
 
             <TouchableOpacity
-              style={[styles.button, loading && { opacity: 0.6 }]}
+              style={[
+                styles.button,
+                { backgroundColor: theme.tint },
+                loading && { opacity: 0.6 },
+              ]}
               onPress={handleSubmit}
               disabled={loading}
             >
@@ -100,16 +123,15 @@ const ForgotPasswordScreen = () => {
               style={styles.link}
               onPress={() => router.push("/auth/LoginScreen")}
             >
-              <Text style={styles.linkText}>
+              <Text style={[styles.linkText, { color: theme.text }]}>
                 Remember your password?{" "}
-                <Text style={styles.linkHighlight}>Go back to login</Text>
+                <Text style={[styles.linkHighlight, { color: theme.tint }]}>
+                  Go back to login
+                </Text>
               </Text>
             </TouchableOpacity>
           </View>
         </KeyboardAvoidingView>
-
-        {/* ✅ Make sure Toast is visible */}
-        {/* <Toast /> */}
       </SafeAreaView>
     </TouchableWithoutFeedback>
   );
@@ -120,7 +142,6 @@ export default ForgotPasswordScreen;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f9f9f9",
   },
   inner: {
     flex: 1,
@@ -128,10 +149,8 @@ const styles = StyleSheet.create({
     padding: 24,
   },
   card: {
-    backgroundColor: "#fff",
     padding: 24,
     borderRadius: 12,
-    shadowColor: "#000",
     shadowOpacity: 0.1,
     shadowOffset: { width: 0, height: 4 },
     shadowRadius: 10,
@@ -142,26 +161,20 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     marginBottom: 10,
     textAlign: "center",
-    color: "#222",
   },
   subtitle: {
     fontSize: 14,
-    color: "#666",
     marginBottom: 20,
     textAlign: "center",
   },
   input: {
     borderWidth: 1,
-    borderColor: "#ddd",
     borderRadius: 8,
     padding: 14,
     fontSize: 16,
-    backgroundColor: "#f1f1f1",
     marginBottom: 20,
-    color: "#222",
   },
   button: {
-    backgroundColor: "#00AA55",
     borderRadius: 8,
     paddingVertical: 14,
     alignItems: "center",
@@ -177,10 +190,8 @@ const styles = StyleSheet.create({
   },
   linkText: {
     fontSize: 14,
-    color: "#666",
   },
   linkHighlight: {
-    color: "#00AA55",
     fontWeight: "600",
   },
 });
