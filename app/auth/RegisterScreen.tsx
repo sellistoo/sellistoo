@@ -95,7 +95,10 @@ const RegisterScreen = () => {
           style={{ flex: 1 }}
           behavior={Platform.OS === "ios" ? "padding" : undefined}
         >
-          <ScrollView contentContainerStyle={styles.scroll}>
+          <ScrollView
+            contentContainerStyle={styles.scroll}
+            keyboardShouldPersistTaps="handled"
+          >
             <Text style={styles.title}>Create Account</Text>
 
             <View style={styles.inputGroup}>
@@ -105,6 +108,8 @@ const RegisterScreen = () => {
                 placeholderTextColor="#999"
                 onChangeText={setName}
                 value={name}
+                textContentType="name"
+                autoComplete="name"
               />
             </View>
 
@@ -117,6 +122,8 @@ const RegisterScreen = () => {
                 autoCapitalize="none"
                 onChangeText={setEmail}
                 value={email}
+                textContentType="emailAddress"
+                autoComplete="email"
               />
             </View>
 
@@ -129,9 +136,12 @@ const RegisterScreen = () => {
                 maxLength={10}
                 value={phoneNumber}
                 onChangeText={(text) => {
-                  const clean = text.replace(/\D/g, "").slice(0, 10);
-                  setPhoneNumber(clean);
+                  if (/^\d{0,10}$/.test(text)) {
+                    setPhoneNumber(text);
+                  }
                 }}
+                textContentType="telephoneNumber"
+                autoComplete="tel"
               />
               <Text style={styles.helperText}>Must be exactly 10 digits</Text>
             </View>
@@ -144,6 +154,8 @@ const RegisterScreen = () => {
                 secureTextEntry
                 onChangeText={setPassword}
                 value={password}
+                textContentType="newPassword"
+                autoComplete="password-new"
               />
             </View>
 
