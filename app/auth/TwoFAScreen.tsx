@@ -1,8 +1,9 @@
+import config from "@/config/config";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
-  Alert,
   Keyboard,
   KeyboardAvoidingView,
   Platform,
@@ -14,66 +15,77 @@ import {
   TouchableWithoutFeedback,
   View,
 } from "react-native";
+import Toast from "react-native-toast-message";
 
 const TwoFAScreen = () => {
   const [code, setCode] = useState("");
+  const [email, setEmail] = useState<string | null>(null);
   const router = useRouter();
 
-  const email =
-    typeof window !== "undefined"
-      ? localStorage.getItem("registerEmail")
-      : null;
-
   useEffect(() => {
-    if (!email) {
-      router.replace("/auth/RegisterScreen");
-    }
-  }, [email]);
+    (async () => {
+      const storedEmail = await AsyncStorage.getItem("registerEmail");
+      if (!storedEmail) {
+        router.replace("/auth/RegisterScreen");
+      } else {
+        setEmail(storedEmail);
+      }
+    })();
+  }, []);
 
   const handleVerify = async () => {
     if (!code || !email) {
-      Alert.alert("Invalid Request", "Missing verification code or email.");
+      Toast.show({
+        type: "error",
+        position: "top",
+        text1: "Invalid Request",
+        text2: "Missing verification code or email.",
+      });
       return;
     }
 
     try {
-      await axios.post(
-        `${process.env.EXPO_PUBLIC_API_BASE_URL}/auth/register-verify`,
-        {
-          email,
-          otp: code,
-        }
-      );
+      await axios.post(`${config.apiUrl}/auth/register-verify`, {
+        email,
+        otp: code,
+      });
 
-      Alert.alert(
-        "Success",
-        "Verification successful! Redirecting to login..."
-      );
+      Toast.show({
+        type: "success",
+        position: "top",
+        text1: "Verification Successful",
+        text2: "Redirecting to login...",
+      });
 
-      localStorage.removeItem("registerEmail");
-      setTimeout(() => {
-        router.push("/auth/LoginScreen");
-      }, 1000);
+      await AsyncStorage.removeItem("registerEmail");
+      setTimeout(() => router.push("/auth/LoginScreen"), 1000);
     } catch (err: any) {
-      Alert.alert(
-        "Verification Failed",
-        err.response?.data?.error || "Invalid or expired code."
-      );
+      Toast.show({
+        type: "error",
+        position: "top",
+        text1: "Verification Failed",
+        text2: err?.response?.data?.error || "Invalid or expired code.",
+      });
     }
   };
 
   const handleResend = async () => {
+    if (!email) return;
     try {
-      await axios.post(
-        `${process.env.EXPO_PUBLIC_API_BASE_URL}/auth/register-resend`,
-        { email }
-      );
-      Alert.alert("Success", "A new OTP has been sent to your email.");
+      await axios.post(`${config.apiUrl}/auth/register-resend`, { email });
+      Toast.show({
+        type: "success",
+        position: "top",
+        text1: "OTP Resent",
+        text2: "A new OTP has been sent to your email.",
+      });
     } catch (err: any) {
-      Alert.alert(
-        "Error",
-        err.response?.data?.error || "Failed to resend OTP."
-      );
+      Toast.show({
+        type: "error",
+        position: "top",
+        text1: "Resend Failed",
+        text2: err?.response?.data?.error || "Could not resend OTP.",
+      });
     }
   };
 
@@ -83,6 +95,7 @@ const TwoFAScreen = () => {
         <KeyboardAvoidingView
           style={styles.inner}
           behavior={Platform.OS === "ios" ? "padding" : undefined}
+          keyboardVerticalOffset={Platform.OS === "ios" ? 60 : 0}
         >
           <View style={styles.card}>
             <Text style={styles.title}>Two-Factor Authentication</Text>
@@ -111,6 +124,9 @@ const TwoFAScreen = () => {
             </TouchableOpacity>
           </View>
         </KeyboardAvoidingView>
+
+        {/*  Toast should be placed at the bottom to ensure visibility */}
+        <Toast />
       </SafeAreaView>
     </TouchableWithoutFeedback>
   );

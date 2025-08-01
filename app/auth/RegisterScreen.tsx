@@ -1,10 +1,11 @@
+import config from "@/config/config";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import Checkbox from "expo-checkbox";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   Keyboard,
   KeyboardAvoidingView,
   Platform,
@@ -17,6 +18,7 @@ import {
   TouchableWithoutFeedback,
   View,
 } from "react-native";
+import Toast from "react-native-toast-message";
 
 const RegisterScreen = () => {
   const router = useRouter();
@@ -29,34 +31,58 @@ const RegisterScreen = () => {
 
   const handleRegister = async () => {
     if (!name || !email || !phoneNumber || !password) {
-      Alert.alert("Missing Fields", "All fields are required.");
+      Toast.show({
+        type: "error",
+        text1: "Missing Fields",
+        text2: "All fields are required.",
+      });
       return;
     }
 
     if (!/^\d{10}$/.test(phoneNumber)) {
-      Alert.alert("Invalid Phone", "Phone number must be exactly 10 digits.");
+      Toast.show({
+        type: "error",
+        text1: "Invalid Phone",
+        text2: "Phone number must be exactly 10 digits.",
+      });
       return;
     }
 
     if (!acceptTerms) {
-      Alert.alert(
-        "Terms Not Accepted",
-        "You must accept the terms to continue."
-      );
+      Toast.show({
+        type: "error",
+        text1: "Terms Not Accepted",
+        text2: "You must accept the terms to continue.",
+      });
       return;
     }
 
     try {
       setLoading(true);
-      await axios.post(
-        "https://your-api.com/auth/register-init", // Replace with actual endpoint
-        { name, email, phone: phoneNumber, password }
-      );
-      router.replace("/auth/LoginScreen");
+
+      await axios.post(`${config.apiUrl}/auth/register-init`, {
+        name,
+        email,
+        phone: phoneNumber,
+        password,
+      });
+
+      Toast.show({
+        type: "success",
+        text1: "OTP Sent",
+        text2: "Check your email to verify your account.",
+      });
+
+      await AsyncStorage.setItem("registerEmail", email);
+      router.replace("/auth/TwoFAScreen");
     } catch (error: any) {
       const msg =
         error.response?.data?.error || "Failed to send OTP. Try again.";
-      Alert.alert("Error", msg);
+      Toast.show({
+        type: "error",
+        text1: "Registration Failed",
+        text2: msg,
+      });
     } finally {
       setLoading(false);
     }
@@ -168,6 +194,7 @@ const RegisterScreen = () => {
 };
 
 export default RegisterScreen;
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -175,7 +202,7 @@ const styles = StyleSheet.create({
   },
   scroll: {
     padding: 24,
-    paddingTop: 40, // less top space
+    paddingTop: 40,
     flexGrow: 1,
   },
   title: {

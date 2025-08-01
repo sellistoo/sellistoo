@@ -47,7 +47,9 @@ export default function ProfileScreen() {
     ]);
   };
 
-  const isSeller = userInfo?.role === "seller";
+  const isSeller =
+    userInfo?.sellerInfo?.status === "active" ||
+    userInfo?.accountType === "both";
   const isAdmin = userInfo?.role === "admin";
 
   const SectionButton = ({
