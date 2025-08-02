@@ -64,21 +64,16 @@ const banners = [
     image: "https://images.unsplash.com/photo-1598515214213-7c603db7ed1e?w=600",
   },
 ];
-
 export default function HomeScreen() {
   const colorScheme = useColorScheme();
   const theme = Colors[colorScheme ?? "light"];
   const router = useRouter();
-
-  // Local state for search input value
   const [searchText, setSearchText] = useState("");
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }}>
-      <ScrollView
-        style={{ flex: 1, backgroundColor: theme.background }}
-        contentContainerStyle={{ paddingBottom: 40 }}
-      >
+      {/* HEADER: fixed delivery address & search */}
+      <View style={[styles.header, { backgroundColor: theme.background }]}>
         {/* Address Bar */}
         <View
           style={[
@@ -100,7 +95,6 @@ export default function HomeScreen() {
             </Text>
           </View>
         </View>
-
         {/* Search Bar */}
         <View style={styles.searchBarContainer}>
           <View
@@ -126,7 +120,14 @@ export default function HomeScreen() {
             />
           </View>
         </View>
+      </View>
 
+      {/* SCROLLABLE main content */}
+      <ScrollView
+        style={{ flex: 1, backgroundColor: theme.background }}
+        contentContainerStyle={{ paddingBottom: 40 }}
+        showsVerticalScrollIndicator={false}
+      >
         {/* Banner */}
         <BannerSlider banners={banners} />
 
@@ -200,12 +201,19 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
+  header: {
+    paddingTop: 8,
+    paddingBottom: 10,
+    paddingHorizontal: 0,
+    // To make sure it stands apart visually from scroll:
+    backgroundColor: "#fff",
+    zIndex: 10,
+  },
   addressContainer: {
     flexDirection: "row",
     alignItems: "center",
     marginHorizontal: 16,
-    marginTop: 8,
-    marginBottom: 8,
+    marginBottom: 4,
     paddingVertical: 6,
     paddingHorizontal: 12,
     borderRadius: 12,
@@ -235,7 +243,8 @@ const styles = StyleSheet.create({
 
   searchBarContainer: {
     marginHorizontal: 16,
-    marginBottom: 24,
+    marginTop: 9,
+    marginBottom: 0,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.07,
@@ -246,7 +255,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 16,
-    paddingVertical: 16,
+    paddingVertical: 12,
     borderRadius: 30,
   },
   searchInput: {
