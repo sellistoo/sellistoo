@@ -38,7 +38,7 @@ export default function SearchScreen() {
   const [availableBrands, setAvailableBrands] = useState<string[]>([]);
   const [availableCategories, setAvailableCategories] = useState<string[]>([]);
 
-  // This is the main filter state used for API and rendering
+  // Main filter state used for API query and rendering
   const [filters, setFilters] = useState({
     brand: [] as string[],
     category: [] as string[],
@@ -50,13 +50,13 @@ export default function SearchScreen() {
     sort: "",
   });
 
-  // For editing filters in the modal ("draft"/pending until apply pressed)
+  // Draft filter state inside the modal (applied only on pressing Apply)
   const [filterDraft, setFilterDraft] = useState(filters);
 
   const [filterModalVisible, setFilterModalVisible] = useState(false);
   const [sortModalVisible, setSortModalVisible] = useState(false);
 
-  // Debounce query
+  // Debounce query input
   useEffect(() => {
     const handler = setTimeout(() => {
       setDebouncedQuery(query);
@@ -66,12 +66,11 @@ export default function SearchScreen() {
     return () => clearTimeout(handler);
   }, [query]);
 
-  // Fetch Products when filters/query change, but ONLY when modal is not open and after apply is pressed
+  // Fetch products when filters, debounced query or page changes
   const fetchProducts = useCallback(async () => {
     if (loading || !hasMore) return;
     setLoading(true);
     try {
-      // Build params only with defined price values
       const params: any = {
         query: debouncedQuery,
         offset: (page - 1) * PAGE_SIZE,
@@ -108,7 +107,7 @@ export default function SearchScreen() {
 
   useEffect(() => {
     fetchProducts();
-  }, [debouncedQuery, page, filters]); // Only triggers when real filters (not drafts) change!
+  }, [debouncedQuery, page, filters]);
 
   const loadMore = () => {
     if (!loading && hasMore) {
@@ -151,12 +150,10 @@ export default function SearchScreen() {
         ]}
       >
         <Image source={{ uri: item.images?.[0] }} style={styles.image} />
-
         <Text style={[styles.name, { color: theme.text }]} numberOfLines={2}>
           {item.name}
         </Text>
         <Text style={[styles.price, { color: theme.tint }]}>₹{price}</Text>
-
         <View style={styles.actions}>
           <TouchableOpacity
             style={[styles.iconButton, { backgroundColor: theme.tint }]}
@@ -174,7 +171,6 @@ export default function SearchScreen() {
           >
             <Ionicons name="cart-outline" size={20} color="#fff" />
           </TouchableOpacity>
-
           <TouchableOpacity
             onPress={() =>
               isFav
@@ -199,7 +195,7 @@ export default function SearchScreen() {
     );
   };
 
-  // --- ACTIVE FILTERS RENDERING ---
+  // Active filters compact display
   const hasActiveFilters =
     filters.brand.length ||
     filters.category.length ||
@@ -292,7 +288,6 @@ export default function SearchScreen() {
     </View>
   );
 
-  // -------- MAIN RENDER ---------
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }}>
       <View style={{ flex: 1, paddingHorizontal: 16, paddingTop: 16 }}>
@@ -314,7 +309,7 @@ export default function SearchScreen() {
           <TouchableOpacity
             style={styles.filterButton}
             onPress={() => {
-              setFilterDraft(filters); // Open modal with current filters
+              setFilterDraft(filters); // Load current filters into draft
               setFilterModalVisible(true);
             }}
           >
@@ -333,7 +328,7 @@ export default function SearchScreen() {
         {/* Active Filters */}
         {hasActiveFilters && activeFilterTags}
 
-        {/* Add bottom padding to FlatList so last row is visible above tags */}
+        {/* Product list */}
         <View style={{ flex: 1 }}>
           {loading && page === 1 ? (
             <ActivityIndicator style={{ marginTop: 30 }} color={theme.tint} />
@@ -364,7 +359,7 @@ export default function SearchScreen() {
         </View>
       </View>
 
-      {/* --- FILTER MODAL AS BOTTOM CARD --- */}
+      {/* --- FILTER MODAL AS BOTTOM CARD WITH CLOSE BUTTON --- */}
       <Modal
         visible={filterModalVisible}
         animationType="fade"
@@ -380,14 +375,24 @@ export default function SearchScreen() {
           }}
         >
           <View style={styles.bottomSheetCard}>
-            <View style={{ alignItems: "center" }}>
-              <View style={styles.bottomSheetDragIndicator} />
-            </View>
-            <Text
-              style={{ fontSize: 20, fontWeight: "bold", marginBottom: 15 }}
+            {/* Header with title and close button */}
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: 15,
+              }}
             >
-              Filters
-            </Text>
+              <Text style={{ fontSize: 20, fontWeight: "bold" }}>Filters</Text>
+              <TouchableOpacity
+                onPress={() => setFilterModalVisible(false)}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <Ionicons name="close" size={26} color="#555" />
+              </TouchableOpacity>
+            </View>
+
             {/* Brands */}
             <Text style={{ fontWeight: "600", marginVertical: 6 }}>Brand</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
@@ -474,7 +479,6 @@ export default function SearchScreen() {
                     : ""
                 }
                 onChangeText={(val) => {
-                  // Only set if valid positive integer, else undefined
                   setFilterDraft((prev) => ({
                     ...prev,
                     price: {
@@ -556,7 +560,7 @@ export default function SearchScreen() {
               ))}
             </View>
 
-            {/* Buttons */}
+            {/* Buttons Apply / Clear */}
             <View style={{ flexDirection: "row", marginTop: 12 }}>
               <TouchableOpacity
                 style={[
@@ -564,7 +568,7 @@ export default function SearchScreen() {
                   { backgroundColor: "#7c3aed", flex: 1 },
                 ]}
                 onPress={() => {
-                  setFilters(filterDraft); // Only update main filters on apply!
+                  setFilters(filterDraft);
                   setPage(1);
                   setFilterModalVisible(false);
                 }}
@@ -590,7 +594,7 @@ export default function SearchScreen() {
         </KeyboardAvoidingView>
       </Modal>
 
-      {/* --- SORT MODAL --- */}
+      {/* SORT MODAL (unchanged) */}
       <Modal
         visible={sortModalVisible}
         animationType="slide"
@@ -660,7 +664,6 @@ export default function SearchScreen() {
   );
 }
 
-// --- STYLES ---
 const styles = StyleSheet.create({
   searchBar: {
     flexDirection: "row",
