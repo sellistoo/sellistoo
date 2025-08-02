@@ -766,7 +766,7 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 24,
     paddingHorizontal: 22,
     paddingTop: 12,
-    paddingBottom: 28,
+    paddingBottom: 32,
     minHeight: 360,
     elevation: 10,
     shadowColor: "#000",
