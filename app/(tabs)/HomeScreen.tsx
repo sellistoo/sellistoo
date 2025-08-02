@@ -2,7 +2,8 @@ import BannerSlider from "@/components/BannerSlider";
 import { Colors } from "@/constants/Colors";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { Ionicons } from "@expo/vector-icons";
-import React from "react";
+import { useRouter } from "expo-router";
+import React, { useState } from "react";
 import {
   FlatList,
   Image,
@@ -67,6 +68,10 @@ const banners = [
 export default function HomeScreen() {
   const colorScheme = useColorScheme();
   const theme = Colors[colorScheme ?? "light"];
+  const router = useRouter();
+
+  // Local state for search input value
+  const [searchText, setSearchText] = useState("");
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }}>
@@ -106,6 +111,18 @@ export default function HomeScreen() {
               placeholder="Search for phones, laptops, accessories..."
               placeholderTextColor={theme.icon}
               style={[styles.searchInput, { color: theme.text }]}
+              value={searchText}
+              onChangeText={setSearchText}
+              onSubmitEditing={() => {
+                if (searchText.trim().length > 0) {
+                  router.push({
+                    pathname: "/SearchScreen",
+                    params: { initialQuery: searchText.trim() },
+                  });
+                }
+              }}
+              returnKeyType="search"
+              blurOnSubmit={true}
             />
           </View>
         </View>
@@ -145,9 +162,6 @@ export default function HomeScreen() {
           <Text style={[styles.sectionTitle, { color: theme.text }]}>
             Flash Sale
           </Text>
-          {/* <TouchableOpacity>
-            <Text style={[styles.seeAll, { color: theme.tint }]}>See all</Text>
-          </TouchableOpacity> */}
         </View>
         <FlatList
           horizontal
@@ -184,6 +198,7 @@ export default function HomeScreen() {
     </SafeAreaView>
   );
 }
+
 const styles = StyleSheet.create({
   addressContainer: {
     flexDirection: "row",
@@ -251,12 +266,6 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: "700",
   },
-  seeAll: {
-    fontSize: 14,
-    fontWeight: "500",
-    opacity: 0.9,
-  },
-
   categoryList: {
     paddingLeft: 16,
     paddingBottom: 20,

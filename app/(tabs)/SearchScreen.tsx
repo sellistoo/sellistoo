@@ -4,6 +4,7 @@ import { useCart } from "@/hooks/useCart";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { useFavorites } from "@/hooks/useFavorites";
 import { Ionicons } from "@expo/vector-icons";
+import { useLocalSearchParams } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -28,7 +29,6 @@ export default function SearchScreen() {
   const { addToCart } = useCart();
   const { isFavorite, addToFavorites, removeFromFavorites } = useFavorites();
 
-  const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [products, setProducts] = useState<any[]>([]);
   const [page, setPage] = useState(1);
@@ -55,6 +55,17 @@ export default function SearchScreen() {
 
   const [filterModalVisible, setFilterModalVisible] = useState(false);
   const [sortModalVisible, setSortModalVisible] = useState(false);
+  const params = useLocalSearchParams();
+  const initialQueryFromParams = (params.initialQuery as string) ?? "";
+  // Local query state initialized from param
+  const [query, setQuery] = useState(initialQueryFromParams);
+
+  // Keep query updated if param changes (e.g., navigating again with new query)
+  useEffect(() => {
+    if (initialQueryFromParams !== query) {
+      setQuery(initialQueryFromParams);
+    }
+  }, [initialQueryFromParams]);
 
   // Debounce query input
   useEffect(() => {
