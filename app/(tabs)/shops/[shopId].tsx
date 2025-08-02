@@ -14,7 +14,9 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+
 const shopBannerPlaceholder = require("@/assets/images/shopbanner.png");
+
 interface Product {
   _id: string;
   id: string;
@@ -49,7 +51,7 @@ export default function ShopScreen() {
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
 
-  // Debounce search input
+  // Debounce search input to avoid frequent API calls
   useEffect(() => {
     const timeout = setTimeout(() => setDebouncedSearchTerm(searchTerm), 500);
     return () => clearTimeout(timeout);
@@ -69,17 +71,18 @@ export default function ShopScreen() {
         setLoading(false);
       }
     };
+
     if (shopId) fetchShop();
   }, [shopId]);
 
-  // Update native header title after shop data loaded
+  // Update native header title after shop data loads
   useEffect(() => {
     if (shop?.storeName) {
       navigation.setOptions({ title: shop.storeName });
     }
   }, [shop?.storeName, navigation]);
 
-  // Fetch products for the shop
+  // Fetch products for the shop with pagination and search
   const loadProducts = useCallback(
     async (reset = false) => {
       if (!shop?.userId) return;
@@ -122,7 +125,7 @@ export default function ShopScreen() {
     [shop?.userId, debouncedSearchTerm, page]
   );
 
-  // Reload products on userId or search term change
+  // Reload products on userId or debounced search term change
   useEffect(() => {
     if (shop?.userId) {
       loadProducts(true);
@@ -136,7 +139,7 @@ export default function ShopScreen() {
     }
   }, [page]);
 
-  // Handle add to cart
+  // Handle add to cart action
   const onAddToCart = (product: Product) => {
     addToCart({
       product: product._id || product.id,
@@ -192,7 +195,7 @@ export default function ShopScreen() {
         </View>
       </View>
 
-      {/* Scrollable product list */}
+      {/* Product list */}
       {loading && products.length === 0 ? (
         <ActivityIndicator style={{ marginTop: 40 }} size="large" />
       ) : products.length === 0 ? (
