@@ -1,6 +1,7 @@
+import api from "@/api"; // ✅ use custom api instance
 import { Colors } from "@/constants/Colors";
 import { useColorScheme } from "@/hooks/useColorScheme";
-import axios from "axios";
+import { useUserInfo } from "@/hooks/useUserInfo";
 import React, { useEffect, useState } from "react";
 import {
   Alert,
@@ -11,10 +12,6 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-
-// Replace with actual auth hook
-const useUserInfo = () => ({ userInfo: { id: "user123" } });
 
 interface Address {
   building: string;
@@ -46,11 +43,10 @@ export default function AddressScreen() {
   });
 
   const fetchAddresses = async () => {
+    console.log("userInfo", userInfo);
     if (!userInfo?.id) return;
     try {
-      const res = await axios.get(
-        `${process.env.EXPO_PUBLIC_API_BASE_URL}/address/${userInfo.id}`
-      );
+      const res = await api.get(`/address/${userInfo.id}`);
       setAddresses(res.data);
     } catch (err) {
       console.error("Failed to fetch addresses", err);
@@ -74,17 +70,15 @@ export default function AddressScreen() {
 
     try {
       if (editIndex !== null) {
-        await axios.put(
-          `${process.env.EXPO_PUBLIC_API_BASE_URL}/address/${userInfo?.id}/${editIndex}`,
-          newAddress
-        );
+        await api.put(`/address/${userInfo?.id}/${editIndex}`, newAddress);
         setEditIndex(null);
       } else {
-        await axios.post(
-          `${process.env.EXPO_PUBLIC_API_BASE_URL}/address/${userInfo?.id}`,
-          { ...newAddress, isDefault: addresses.length === 0 }
-        );
+        await api.post(`/address/${userInfo?.id}`, {
+          ...newAddress,
+          isDefault: addresses.length === 0,
+        });
       }
+
       setNewAddress({
         building: "",
         street: "",
@@ -95,6 +89,7 @@ export default function AddressScreen() {
         mobileNumber: "",
         landmark: "",
       });
+
       fetchAddresses();
     } catch (err) {
       Alert.alert("Error", "Failed to save address.");
@@ -103,10 +98,7 @@ export default function AddressScreen() {
 
   const handleSetDefault = async (index: number) => {
     try {
-      await axios.put(
-        `${process.env.EXPO_PUBLIC_API_BASE_URL}/address/${userInfo?.id}/default/${index}`,
-        {}
-      );
+      await api.put(`/address/${userInfo?.id}/default/${index}`, {});
       fetchAddresses();
     } catch {
       Alert.alert("Error", "Failed to set default address.");
@@ -121,9 +113,7 @@ export default function AddressScreen() {
         style: "destructive",
         onPress: async () => {
           try {
-            await axios.delete(
-              `${process.env.EXPO_PUBLIC_API_BASE_URL}/address/${userInfo?.id}/${index}`
-            );
+            await api.delete(`/address/${userInfo?.id}/${index}`);
             fetchAddresses();
           } catch {
             Alert.alert("Error", "Failed to delete.");
@@ -139,115 +129,111 @@ export default function AddressScreen() {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }}>
-      <FlatList
-        ListHeaderComponent={
-          <>
-            <Text style={[styles.heading, { color: theme.text }]}>
-              Manage Your Addresses
-            </Text>
-            {addresses.map((address, index) => (
-              <View
-                key={index}
-                style={[styles.card, { borderColor: theme.border }]}
-              >
-                <View style={styles.cardRow}>
-                  <Text style={[styles.cardTitle, { color: theme.text }]}>
-                    {address.building}
-                  </Text>
-                  {address.isDefault && (
-                    <Text style={[styles.defaultBadge, { color: theme.tint }]}>
-                      Default
-                    </Text>
-                  )}
-                </View>
-                <Text style={[styles.subText, { color: theme.mutedText }]}>
-                  {address.street}, {address.city}, {address.state},{" "}
-                  {address.zipCode}
+    <FlatList
+      ListHeaderComponent={
+        <>
+          <Text style={[styles.heading, { color: theme.text }]}>
+            Manage Your Addresses
+          </Text>
+          {addresses.map((address, index) => (
+            <View
+              key={index}
+              style={[styles.card, { borderColor: theme.border }]}
+            >
+              <View style={styles.cardRow}>
+                <Text style={[styles.cardTitle, { color: theme.text }]}>
+                  {address.building}
                 </Text>
-                <Text style={[styles.subText, { color: theme.mutedText }]}>
-                  Mobile: {address.mobileNumber}
-                </Text>
-                {address.landmark && (
-                  <Text style={[styles.subText, { color: theme.mutedText }]}>
-                    Landmark: {address.landmark}
+                {address.isDefault && (
+                  <Text style={[styles.defaultBadge, { color: theme.tint }]}>
+                    Default
                   </Text>
                 )}
-
-                <View style={styles.cardActions}>
-                  <TouchableOpacity
-                    onPress={() => handleSetDefault(index)}
-                    disabled={address.isDefault}
-                  >
-                    <Text style={[styles.link, { color: theme.tint }]}>
-                      Set Default
-                    </Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity onPress={() => handleEdit(index)}>
-                    <Text style={[styles.link, { color: theme.tint }]}>
-                      Edit
-                    </Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity onPress={() => handleDelete(index)}>
-                    <Text style={[styles.link, { color: theme.destructive }]}>
-                      Delete
-                    </Text>
-                  </TouchableOpacity>
-                </View>
               </View>
-            ))}
-
-            <Text style={[styles.subHeading, { color: theme.text }]}>
-              {editIndex !== null ? "Edit Address" : "Add New Address"}
-            </Text>
-          </>
-        }
-        data={[{ key: "form" }]}
-        renderItem={() => (
-          <View style={{ gap: 10, marginHorizontal: 16, marginBottom: 60 }}>
-            {[
-              { label: "Flat / House", key: "building" },
-              { label: "Street", key: "street" },
-              { label: "Landmark", key: "landmark" },
-              { label: "City", key: "city" },
-              { label: "State", key: "state" },
-              { label: "Zip Code", key: "zipCode" },
-              { label: "Mobile", key: "mobileNumber" },
-            ].map((item) => (
-              <TextInput
-                key={item.key}
-                placeholder={item.label}
-                value={newAddress[item.key as keyof typeof newAddress]}
-                onChangeText={(text) =>
-                  handleInputChange(item.key as keyof typeof newAddress, text)
-                }
-                style={[
-                  styles.input,
-                  {
-                    borderColor: theme.border,
-                    color: theme.text,
-                    backgroundColor: theme.cardBg,
-                  },
-                ]}
-                keyboardType={
-                  item.key === "zipCode" || item.key === "mobileNumber"
-                    ? "numeric"
-                    : "default"
-                }
-              />
-            ))}
-            <TouchableOpacity
-              style={[styles.saveButton, { backgroundColor: theme.tint }]}
-              onPress={handleAddOrUpdate}
-            >
-              <Text style={{ color: "#fff", fontWeight: "600" }}>
-                {editIndex !== null ? "Update Address" : "Save Address"}
+              <Text style={[styles.subText, { color: theme.mutedText }]}>
+                {address.street}, {address.city}, {address.state},{" "}
+                {address.zipCode}
               </Text>
-            </TouchableOpacity>
-          </View>
-        )}
-      />
-    </SafeAreaView>
+              <Text style={[styles.subText, { color: theme.mutedText }]}>
+                Mobile: {address.mobileNumber}
+              </Text>
+              {address.landmark && (
+                <Text style={[styles.subText, { color: theme.mutedText }]}>
+                  Landmark: {address.landmark}
+                </Text>
+              )}
+
+              <View style={styles.cardActions}>
+                <TouchableOpacity
+                  onPress={() => handleSetDefault(index)}
+                  disabled={address.isDefault}
+                >
+                  <Text style={[styles.link, { color: theme.tint }]}>
+                    Set Default
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => handleEdit(index)}>
+                  <Text style={[styles.link, { color: theme.tint }]}>Edit</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => handleDelete(index)}>
+                  <Text style={[styles.link, { color: theme.destructive }]}>
+                    Delete
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          ))}
+
+          <Text style={[styles.subHeading, { color: theme.text }]}>
+            {editIndex !== null ? "Edit Address" : "Add New Address"}
+          </Text>
+        </>
+      }
+      data={[{ key: "form" }]}
+      renderItem={() => (
+        <View style={{ gap: 10, marginHorizontal: 16, marginBottom: 60 }}>
+          {[
+            { label: "Flat / House", key: "building" },
+            { label: "Street", key: "street" },
+            { label: "Landmark", key: "landmark" },
+            { label: "City", key: "city" },
+            { label: "State", key: "state" },
+            { label: "Zip Code", key: "zipCode" },
+            { label: "Mobile", key: "mobileNumber" },
+          ].map((item) => (
+            <TextInput
+              key={item.key}
+              placeholder={item.label}
+              value={newAddress[item.key as keyof typeof newAddress]}
+              onChangeText={(text) =>
+                handleInputChange(item.key as keyof typeof newAddress, text)
+              }
+              style={[
+                styles.input,
+                {
+                  borderColor: theme.border,
+                  color: theme.text,
+                  backgroundColor: theme.cardBg,
+                },
+              ]}
+              keyboardType={
+                item.key === "zipCode" || item.key === "mobileNumber"
+                  ? "numeric"
+                  : "default"
+              }
+            />
+          ))}
+          <TouchableOpacity
+            style={[styles.saveButton, { backgroundColor: theme.tint }]}
+            onPress={handleAddOrUpdate}
+          >
+            <Text style={{ color: "#fff", fontWeight: "600" }}>
+              {editIndex !== null ? "Update Address" : "Save Address"}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      )}
+    />
   );
 }
 
