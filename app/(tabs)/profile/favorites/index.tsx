@@ -1,7 +1,8 @@
 import { Colors } from "@/constants/Colors";
 import { useColorScheme } from "@/hooks/useColorScheme";
+import { useFavorites } from "@/hooks/useFavorites";
 import { Ionicons } from "@expo/vector-icons";
-import React, { useState } from "react";
+import React from "react";
 import {
   FlatList,
   Image,
@@ -12,35 +13,13 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-// Dummy products for now
-const dummyFavorites = [
-  {
-    id: "1",
-    name: "Apple iPhone 14 Pro Max",
-    image:
-      "https://store.storeimages.cdn-apple.com/4668/as-images.apple.com/is/iphone-14-pro-max-model-unselect-gallery-1-202209?wid=5120&hei=2880&fmt=jpeg&qlt=80&.v=1660753619946",
-    price: 129999,
-  },
-  {
-    id: "2",
-    name: "Samsung Galaxy S23 Ultra",
-    image:
-      "https://images.samsung.com/is/image/samsung/assets/in/smartphones/galaxy-s23-ultra/images/galaxy-s23-ultra_highlights_kv_img.jpg",
-    price: 114999,
-  },
-];
-
 export default function FavoriteScreen() {
   const theme = Colors[useColorScheme() ?? "light"];
-  const [favorites, setFavorites] = useState(dummyFavorites);
-
-  const removeFromFavorites = (id: string) => {
-    setFavorites((prev) => prev.filter((item) => item.id !== id));
-  };
+  const { favoriteProducts, removeFromFavorites } = useFavorites();
 
   const addToCart = (item: any) => {
     console.log("Add to cart:", item.name);
-    // Implement add-to-cart logic
+    // implement cart logic
   };
 
   return (
@@ -52,8 +31,8 @@ export default function FavoriteScreen() {
           </Text>
         }
         contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 40 }}
-        data={favorites}
-        keyExtractor={(item) => item.id}
+        data={favoriteProducts}
+        keyExtractor={(item, index) => item.id?.toString() || `fav-${index}`} // ✅ Fixed
         renderItem={({ item }) => (
           <View
             style={[
@@ -84,7 +63,7 @@ export default function FavoriteScreen() {
                   <Text style={styles.addButtonText}>Add to Cart</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  onPress={() => removeFromFavorites(item.id)}
+                  onPress={() => removeFromFavorites(item._id)}
                   style={[
                     styles.removeButton,
                     { borderColor: theme.destructive },
