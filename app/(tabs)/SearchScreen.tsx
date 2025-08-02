@@ -209,74 +209,87 @@ export default function SearchScreen() {
     filters.sort;
 
   const activeFilterTags = (
-    <ScrollView
-      horizontal
-      showsHorizontalScrollIndicator={false}
-      style={{ marginVertical: 2, marginBottom: 2 }}
-      contentContainerStyle={{
-        flexDirection: "row",
-        alignItems: "center",
-        paddingRight: 16,
+    <View
+      style={{
+        height: 32,
+        marginBottom: 0,
+        paddingTop: 0,
+        paddingBottom: 0,
+        overflow: "visible",
       }}
     >
-      {filters.brand.map((b) => (
-        <View style={styles.activeTag} key={`brand-${b}`}>
-          <Text style={styles.activeTagText}>Brand: {b}</Text>
-          <TouchableOpacity onPress={() => removeFilter("brand", b)}>
-            <Ionicons name="close" size={14} color="#7c3aed" />
-          </TouchableOpacity>
-        </View>
-      ))}
-      {filters.category.map((c) => (
-        <View style={styles.activeTag} key={`category-${c}`}>
-          <Text style={styles.activeTagText}>Category: {c}</Text>
-          <TouchableOpacity onPress={() => removeFilter("category", c)}>
-            <Ionicons name="close" size={14} color="#7c3aed" />
-          </TouchableOpacity>
-        </View>
-      ))}
-      {filters.availability.map((a) => (
-        <View style={styles.activeTag} key={`availability-${a}`}>
-          <Text style={styles.activeTagText}>
-            Availability: {a.replace("_", " ")}
-          </Text>
-          <TouchableOpacity onPress={() => removeFilter("availability", a)}>
-            <Ionicons name="close" size={14} color="#7c3aed" />
-          </TouchableOpacity>
-        </View>
-      ))}
-      {filters.price.min !== undefined && (
-        <View style={styles.activeTag} key="priceMin">
-          <Text style={styles.activeTagText}>Min ₹{filters.price.min}</Text>
-          <TouchableOpacity onPress={() => removeFilter("priceMin")}>
-            <Ionicons name="close" size={14} color="#7c3aed" />
-          </TouchableOpacity>
-        </View>
-      )}
-      {filters.price.max !== undefined && (
-        <View style={styles.activeTag} key="priceMax">
-          <Text style={styles.activeTagText}>Max ₹{filters.price.max}</Text>
-          <TouchableOpacity onPress={() => removeFilter("priceMax")}>
-            <Ionicons name="close" size={14} color="#7c3aed" />
-          </TouchableOpacity>
-        </View>
-      )}
-      {filters.sort && (
-        <View style={styles.activeTag} key="sortTag">
-          <Text style={styles.activeTagText}>
-            Sort:{" "}
-            {filters.sort === "price:asc"
-              ? "Price: Low to High"
-              : filters.sort === "price:desc"
-              ? "Price: High to Low"
-              : "Newest First"}
-          </Text>
-          <TouchableOpacity onPress={() => removeFilter("sort")}>
-            <Ionicons name="close" size={14} color="#7c3aed" />
-          </TouchableOpacity>
-        </View>
-      )}
-    </ScrollView>
+      <ScrollView
+        horizontal={true}
+        showsHorizontalScrollIndicator={false}
+        showsVerticalScrollIndicator={false}
+        style={{ marginVertical: 2, marginBottom: 2 }}
+        contentContainerStyle={{
+          flexDirection: "row",
+          alignItems: "center",
+          paddingHorizontal: 0,
+          paddingVertical: 0,
+          marginVertical: 0,
+        }}
+      >
+        {filters.brand.map((b) => (
+          <View style={styles.activeTag} key={`brand-${b}`}>
+            <Text style={styles.activeTagText}>Brand: {b}</Text>
+            <TouchableOpacity onPress={() => removeFilter("brand", b)}>
+              <Ionicons name="close" size={14} color="#7c3aed" />
+            </TouchableOpacity>
+          </View>
+        ))}
+        {filters.category.map((c) => (
+          <View style={styles.activeTag} key={`category-${c}`}>
+            <Text style={styles.activeTagText}>Category: {c}</Text>
+            <TouchableOpacity onPress={() => removeFilter("category", c)}>
+              <Ionicons name="close" size={14} color="#7c3aed" />
+            </TouchableOpacity>
+          </View>
+        ))}
+        {filters.availability.map((a) => (
+          <View style={styles.activeTag} key={`availability-${a}`}>
+            <Text style={styles.activeTagText}>
+              Availability: {a.replace("_", " ")}
+            </Text>
+            <TouchableOpacity onPress={() => removeFilter("availability", a)}>
+              <Ionicons name="close" size={14} color="#7c3aed" />
+            </TouchableOpacity>
+          </View>
+        ))}
+        {filters.price.min !== undefined && (
+          <View style={styles.activeTag} key="priceMin">
+            <Text style={styles.activeTagText}>Min ₹{filters.price.min}</Text>
+            <TouchableOpacity onPress={() => removeFilter("priceMin")}>
+              <Ionicons name="close" size={14} color="#7c3aed" />
+            </TouchableOpacity>
+          </View>
+        )}
+        {filters.price.max !== undefined && (
+          <View style={styles.activeTag} key="priceMax">
+            <Text style={styles.activeTagText}>Max ₹{filters.price.max}</Text>
+            <TouchableOpacity onPress={() => removeFilter("priceMax")}>
+              <Ionicons name="close" size={14} color="#7c3aed" />
+            </TouchableOpacity>
+          </View>
+        )}
+        {filters.sort && (
+          <View style={styles.activeTag} key="sortTag">
+            <Text style={styles.activeTagText}>
+              Sort:{" "}
+              {filters.sort === "price:asc"
+                ? "Price: Low to High"
+                : filters.sort === "price:desc"
+                ? "Price: High to Low"
+                : "Newest First"}
+            </Text>
+            <TouchableOpacity onPress={() => removeFilter("sort")}>
+              <Ionicons name="close" size={14} color="#7c3aed" />
+            </TouchableOpacity>
+          </View>
+        )}
+      </ScrollView>
+    </View>
   );
 
   // -------- MAIN RENDER ---------
