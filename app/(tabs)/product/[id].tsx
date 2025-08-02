@@ -90,7 +90,6 @@ export default function ProductDetailScreen() {
         ? { size: variant.size, color: variant.color }
         : undefined,
     });
-    Alert.alert("Added!", "This item is now in your cart.");
   }
   function onBuyNow() {
     if (!product) return;
