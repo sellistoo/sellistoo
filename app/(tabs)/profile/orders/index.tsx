@@ -2,6 +2,7 @@ import api from "@/api";
 import { Colors } from "@/constants/Colors";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { useUserInfo } from "@/hooks/useUserInfo";
+import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -45,6 +46,7 @@ export default function OrderScreen() {
   const colorScheme = useColorScheme() ?? "light";
   const theme = Colors[colorScheme];
   const { userInfo } = useUserInfo();
+  const router = useRouter();
 
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(false);
@@ -169,9 +171,7 @@ export default function OrderScreen() {
                 </Text>
               </View>
               <TouchableOpacity
-                onPress={() => {
-                  // TODO: navigate to product screen/product details
-                }}
+                onPress={() => router.push(`/product/${product.productId}`)}
                 hitSlop={10}
               >
                 <Text
@@ -207,11 +207,7 @@ export default function OrderScreen() {
             >
               You have no orders yet.
             </Text>
-            <TouchableOpacity
-              onPress={() => {
-                /* TODO: navigate home */
-              }}
-            >
+            <TouchableOpacity onPress={() => router.push(`/HomeScreen`)}>
               <Text
                 style={{ color: theme.tint, fontWeight: "bold", fontSize: 15 }}
               >
