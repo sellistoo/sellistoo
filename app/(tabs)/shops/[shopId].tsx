@@ -14,7 +14,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-
+const shopBannerPlaceholder = require("@/assets/images/shopbanner.png");
 interface Product {
   _id: string;
   id: string;
@@ -34,7 +34,6 @@ interface Shop {
 }
 
 const itemsPerPage = 20;
-const shopBannerPlaceholder = "https://placehold.co/400x100?text=Shop+Banner";
 
 export default function ShopScreen() {
   const { shopId } = useLocalSearchParams();
@@ -170,7 +169,11 @@ export default function ShopScreen() {
       {/* Banner, description, and search section */}
       <View>
         <Image
-          source={{ uri: shop.storeBannerUrl || shopBannerPlaceholder }}
+          source={
+            shop.storeBannerUrl
+              ? { uri: shop.storeBannerUrl }
+              : shopBannerPlaceholder
+          }
           style={styles.banner}
           resizeMode="cover"
         />
