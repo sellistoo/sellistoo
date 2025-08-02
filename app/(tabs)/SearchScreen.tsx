@@ -620,7 +620,7 @@ export default function SearchScreen() {
                 }}
               >
                 <Ionicons
-                  name={filters.sort === opt ? "checkmark" : ""}
+                  name={filters.sort === opt ? "checkmark" : ("" as any)}
                   size={18}
                   color="#7c3aed"
                   style={{ marginRight: 10 }}
