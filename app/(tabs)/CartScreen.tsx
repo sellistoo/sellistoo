@@ -72,7 +72,13 @@ export default function CartScreen() {
                   },
                 ]}
               >
-                <Image source={{ uri: item.image }} style={styles.image} />
+                {/* Only the image is touchable for product view */}
+                <TouchableOpacity
+                  onPress={() => router.push(`/product/${item.product}`)}
+                  activeOpacity={0.84}
+                >
+                  <Image source={{ uri: item.image }} style={styles.image} />
+                </TouchableOpacity>{" "}
                 <View style={styles.details}>
                   <Text style={[styles.name, { color: theme.text }]}>
                     {item.name}
