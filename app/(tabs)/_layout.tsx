@@ -98,6 +98,14 @@ export default function TabLayout() {
           ),
         }}
       />
+      <Tabs.Screen
+        name="checkout"
+        options={{
+          // Hide from tab bar (not shown as a tab), but still routable.
+          href: null,
+          // optionally: headerShown: false, etc.
+        }}
+      />
     </Tabs>
   );
 }
