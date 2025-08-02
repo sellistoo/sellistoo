@@ -193,37 +193,57 @@ export default function AddressScreen() {
           {editIndex !== null ? "Edit Address" : "Add New Address"}
         </Text>
 
-        <View style={{ gap: 10, marginHorizontal: 16, marginBottom: 60 }}>
+        <View style={{ gap: 14, marginHorizontal: 16, marginBottom: 60 }}>
           {[
-            { label: "Flat / House", key: "building" },
-            { label: "Street", key: "street" },
-            { label: "Landmark", key: "landmark" },
-            { label: "City", key: "city" },
-            { label: "State", key: "state" },
-            { label: "Zip Code", key: "zipCode" },
-            { label: "Mobile", key: "mobileNumber" },
+            { label: "Flat / House", key: "building", required: true },
+            { label: "Street", key: "street", required: true },
+            { label: "Landmark (Optional)", key: "landmark", required: false },
+            { label: "City", key: "city", required: true },
+            { label: "State", key: "state", required: true },
+            { label: "Zip Code", key: "zipCode", required: true },
+            { label: "Mobile", key: "mobileNumber", required: true },
           ].map((item) => (
-            <TextInput
-              key={item.key}
-              placeholder={item.label}
-              value={newAddress[item.key as keyof typeof newAddress]}
-              onChangeText={(text) =>
-                handleInputChange(item.key as keyof typeof newAddress, text)
-              }
-              style={[
-                styles.input,
-                {
-                  borderColor: theme.border,
-                  color: theme.text,
-                  backgroundColor: theme.cardBg,
-                },
-              ]}
-              keyboardType={
-                item.key === "zipCode" || item.key === "mobileNumber"
-                  ? "numeric"
-                  : "default"
-              }
-            />
+            <View key={item.key} style={{ marginBottom: 0 }}>
+              <Text
+                style={{
+                  marginLeft: 4,
+                  marginBottom: 4,
+                  color: item.required ? theme.text : theme.mutedText,
+                  fontSize: 13.2,
+                  fontWeight: item.required ? "600" : "500",
+                  letterSpacing: 0.1,
+                }}
+              >
+                {item.label}
+                {item.required ? (
+                  <Text style={{ color: theme.accent }}> *</Text>
+                ) : null}
+              </Text>
+              <TextInput
+                placeholder={item.label}
+                value={newAddress[item.key as keyof typeof newAddress]}
+                onChangeText={(text) =>
+                  handleInputChange(item.key as keyof typeof newAddress, text)
+                }
+                style={[
+                  styles.input,
+                  {
+                    borderColor: theme.border,
+                    color: theme.text,
+                    backgroundColor: theme.cardBg,
+                  },
+                ]}
+                placeholderTextColor={theme.mutedText}
+                keyboardType={
+                  item.key === "zipCode" || item.key === "mobileNumber"
+                    ? "numeric"
+                    : "default"
+                }
+                autoCapitalize={
+                  item.key === "state" || item.key === "city" ? "words" : "none"
+                }
+              />
+            </View>
           ))}
           <TouchableOpacity
             style={[styles.saveButton, { backgroundColor: theme.tint }]}
@@ -292,7 +312,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   saveButton: {
-    marginTop: 10,
+    marginTop: 12,
     padding: 14,
     borderRadius: 10,
     alignItems: "center",

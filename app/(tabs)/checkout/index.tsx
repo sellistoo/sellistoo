@@ -358,26 +358,6 @@ const CheckoutScreen: React.FC = () => {
               >
                 Add Address
               </Button>
-              {addresses.length > 0 && (
-                <Button
-                  mode="contained"
-                  style={{
-                    backgroundColor: theme.accent,
-                    borderRadius: 20,
-                    marginLeft: 6,
-                    height: 36,
-                    justifyContent: "center",
-                  }}
-                  onPress={() => {
-                    if (selectedIdx === null) {
-                      Alert.alert("Please select an address.");
-                    }
-                  }}
-                  labelStyle={{ fontWeight: "700", color: theme.background }}
-                >
-                  Deliver Here
-                </Button>
-              )}
             </View>
             {showAddAddress && (
               <Card
