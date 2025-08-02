@@ -6,6 +6,7 @@ import {
   useEffect,
   useState,
 } from "react";
+import Toast from "react-native-toast-message";
 import { useUserInfo } from "./useUserInfo";
 
 interface Variant {
@@ -95,8 +96,18 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
           }
           return [...prev, item];
         });
+        Toast.show({
+          type: "success",
+          text1: "Added to cart",
+          text2: `${item.name} added successfully.`,
+        });
       } catch (err) {
         console.error("Failed to add to cart", err);
+        Toast.show({
+          type: "error",
+          text1: "Add to cart failed",
+          text2: "Please try again later.",
+        });
       }
     },
     [userId]
@@ -114,8 +125,18 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
               : item
           )
         );
+        Toast.show({
+          type: "success",
+          text1: "Quantity updated",
+          text2: `Quantity updated to ${quantity}.`,
+        });
       } catch (err) {
         console.error("Failed to update quantity", err);
+        Toast.show({
+          type: "error",
+          text1: "Update failed",
+          text2: "Unable to update quantity, please try again.",
+        });
       }
     },
     [userId]
@@ -131,8 +152,18 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
             (item) => !(item.product === productId && item.sku === sku)
           )
         );
+        Toast.show({
+          type: "success",
+          text1: "Removed from cart",
+          text2: `Item removed from cart.`,
+        });
       } catch (err) {
         console.error("Failed to remove from cart", err);
+        Toast.show({
+          type: "error",
+          text1: "Remove failed",
+          text2: "Unable to remove item, please try again.",
+        });
       }
     },
     [userId]
@@ -143,8 +174,18 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
     try {
       await api.delete(`/cart/${userId}/clear`);
       setCartItems([]);
+      Toast.show({
+        type: "success",
+        text1: "Cart cleared",
+        text2: "All items removed from the cart.",
+      });
     } catch (err) {
       console.error("Failed to clear cart", err);
+      Toast.show({
+        type: "error",
+        text1: "Clear cart failed",
+        text2: "Please try again later.",
+      });
     }
   }, [userId]);
 

@@ -6,6 +6,7 @@ import {
   useEffect,
   useState,
 } from "react";
+import Toast from "react-native-toast-message";
 import { useUserInfo } from "./useUserInfo";
 
 interface FavoritesContextType {
@@ -54,8 +55,18 @@ export const FavoritesProvider = ({
       try {
         await api.post(`/wishlist/${userId}/add`, { productId });
         setFavorites((prev) => [...new Set([...prev, productId])]);
+        Toast.show({
+          type: "success",
+          text1: "Added to Favorites",
+          text2: "The product was added to your favorites",
+        });
       } catch (err) {
         console.error("Failed to add to wishlist", err);
+        Toast.show({
+          type: "error",
+          text1: "Failed to add favorite",
+          text2: "Please try again later",
+        });
       }
     },
     [userId]
@@ -67,8 +78,18 @@ export const FavoritesProvider = ({
       try {
         await api.post(`/wishlist/${userId}/remove`, { productId });
         setFavorites((prev) => prev.filter((id) => id !== productId));
+        Toast.show({
+          type: "success",
+          text1: "Removed from Favorites",
+          text2: "The product was removed from your favorites",
+        });
       } catch (err) {
         console.error("Failed to remove from wishlist", err);
+        Toast.show({
+          type: "error",
+          text1: "Failed to remove favorite",
+          text2: "Please try again later",
+        });
       }
     },
     [userId]
