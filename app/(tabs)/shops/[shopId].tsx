@@ -1,7 +1,7 @@
 import api from "@/api";
 import { useCart } from "@/hooks/useCart";
 import { useNavigation } from "@react-navigation/native";
-import { useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router"; // <-- useRouter, not useNavigation!
 import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -39,6 +39,7 @@ const itemsPerPage = 20;
 
 export default function ShopScreen() {
   const { shopId } = useLocalSearchParams();
+  const router = useRouter(); // useRouter for Expo Router navigation
   const navigation = useNavigation();
   const { addToCart } = useCart();
 
@@ -71,7 +72,6 @@ export default function ShopScreen() {
         setLoading(false);
       }
     };
-
     if (shopId) fetchShop();
   }, [shopId]);
 
@@ -82,15 +82,15 @@ export default function ShopScreen() {
     }
   }, [shop?.storeName, navigation]);
 
+  //
+
   // Fetch products for the shop with pagination and search
   const loadProducts = useCallback(
     async (reset = false) => {
       if (!shop?.userId) return;
       if (reset) setPage(1);
-
       const currentPage = reset ? 1 : page;
       const baseUrl = `/seller/elestic/products/${shop.userId}`;
-
       setLoading(reset || currentPage === 1);
       setFetchingMore(!reset && currentPage !== 1);
 
@@ -105,7 +105,6 @@ export default function ShopScreen() {
             },
           }
         );
-
         const data = res.data;
         setProducts((prev) =>
           reset || currentPage === 1
@@ -218,7 +217,11 @@ export default function ShopScreen() {
             fetchingMore ? <ActivityIndicator style={{ margin: 12 }} /> : null
           }
           renderItem={({ item }) => (
-            <View style={styles.card}>
+            <TouchableOpacity // <<-- Tap on card navigates!
+              style={styles.card}
+              activeOpacity={0.88}
+              onPress={() => router.push(`/product/${item._id || item.id}`)}
+            >
               <Image
                 source={{ uri: item.images?.[0] ?? "https://placehold.co/150" }}
                 style={styles.productImg}
@@ -239,11 +242,14 @@ export default function ShopScreen() {
               </View>
               <TouchableOpacity
                 style={styles.addBtn}
-                onPress={() => onAddToCart(item)}
+                onPress={(e) => {
+                  e.stopPropagation?.();
+                  onAddToCart(item);
+                }}
               >
                 <Text style={styles.addBtnText}>Add to Cart</Text>
               </TouchableOpacity>
-            </View>
+            </TouchableOpacity>
           )}
         />
       )}
