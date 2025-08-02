@@ -12,6 +12,7 @@ import {
   FlatList,
   Image,
   Modal,
+  Pressable,
   SafeAreaView,
   ScrollView,
   StyleSheet,
@@ -28,9 +29,7 @@ export default function ProductDetailScreen() {
   const colorScheme = useColorScheme() ?? "light";
   const theme = Colors[colorScheme];
   const router = useRouter();
-  // expo-router: params = productId in url
   const { id } = useLocalSearchParams<{ id: string }>();
-
   const { addToCart } = useCart();
   const { isFavorite, addToFavorites, removeFromFavorites } = useFavorites();
 
@@ -42,7 +41,6 @@ export default function ProductDetailScreen() {
   const [modalVisible, setModalVisible] = useState(false);
   const [quantity, setQuantity] = useState(1);
 
-  // --- Fetch Product & Related ---
   useEffect(() => {
     if (!id) return;
     let mounted = true;
@@ -56,7 +54,6 @@ export default function ProductDetailScreen() {
       })
       .catch(() => Alert.alert("Error", "Could not load product."))
       .finally(() => setLoading(false));
-
     return () => {
       mounted = false;
     };
@@ -70,7 +67,6 @@ export default function ProductDetailScreen() {
       .catch(() => {});
   }, [id]);
 
-  // --- Derived values ---
   const fav = product ? isFavorite(product._id || product.id) : false;
   const variant = selectedVariant;
   const finalPrice =
@@ -80,7 +76,6 @@ export default function ProductDetailScreen() {
     product?.price;
   const availableQuantity = variant?.quantity ?? product?.quantity ?? 0;
 
-  // --- Handlers ---
   function onAddToCart() {
     if (!product) return;
     const sku = variant?.sku || product.sku;
@@ -132,6 +127,8 @@ export default function ProductDetailScreen() {
     );
   }
 
+  const mainImages: string[] = variant?.images || product.images || [];
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }}>
       {/* HEADER */}
@@ -166,13 +163,14 @@ export default function ProductDetailScreen() {
       >
         {/* MAIN IMAGE CAROUSEL */}
         <FlatList
-          data={variant?.images || product.images}
+          data={mainImages}
           horizontal
           pagingEnabled
           showsHorizontalScrollIndicator={false}
-          keyExtractor={(_, idx) => `img-${idx}`}
+          keyExtractor={(item) => item}
           renderItem={({ item }) => (
             <TouchableOpacity
+              key={item}
               onPress={() => {
                 setSelectedImage(item);
                 setModalVisible(true);
@@ -197,48 +195,62 @@ export default function ProductDetailScreen() {
             alignSelf: "center",
           }}
         >
-          {(variant?.images || product.images)?.map(
-            (img: string, idx: number) => (
-              <TouchableOpacity
-                key={idx}
-                onPress={() => setSelectedImage(img)}
-                style={[
-                  s.thumbImgWrap,
-                  {
-                    borderColor:
-                      selectedImage === img ? theme.tint : theme.border,
-                  },
-                ]}
-              >
-                <Image
-                  source={{ uri: img }}
-                  style={s.thumbImg}
-                  resizeMode="cover"
-                />
-              </TouchableOpacity>
-            )
-          )}
+          {mainImages.map((img: string) => (
+            <TouchableOpacity
+              key={img}
+              onPress={() => setSelectedImage(img)}
+              style={[
+                s.thumbImgWrap,
+                {
+                  borderColor:
+                    selectedImage === img ? theme.tint : theme.border,
+                },
+              ]}
+            >
+              <Image
+                source={{ uri: img }}
+                style={s.thumbImg}
+                resizeMode="cover"
+              />
+            </TouchableOpacity>
+          ))}
         </View>
 
         {/* MODAL ZOOM */}
         <Modal
           transparent
           visible={modalVisible}
+          animationType="fade"
           onRequestClose={() => setModalVisible(false)}
         >
-          <View style={s.modalOverlay}>
-            <TouchableOpacity
-              style={s.modalCloseBtn}
-              onPress={() => setModalVisible(false)}
+          {/* Overlay catch: press anywhere to close, but close button on top */}
+          <Pressable
+            style={s.modalOverlay}
+            onPress={() => setModalVisible(false)}
+          >
+            <View
+              style={{
+                width: "100%",
+                height: "100%",
+                justifyContent: "center",
+                alignItems: "center",
+              }}
             >
-              <Ionicons name="close" size={32} color="#fff" />
-            </TouchableOpacity>
-            <Image
-              source={{ uri: selectedImage }}
-              style={s.modalImg}
-              resizeMode="contain"
-            />
-          </View>
+              <Image
+                source={{ uri: selectedImage }}
+                style={s.modalImg}
+                resizeMode="contain"
+              />
+              {/* Absolutely positioned top right so it's above content on all devices */}
+              <TouchableOpacity
+                style={s.modalCloseBtn}
+                onPress={() => setModalVisible(false)}
+                hitSlop={16}
+              >
+                <Ionicons name="close" size={32} color="#fff" />
+              </TouchableOpacity>
+            </View>
+          </Pressable>
         </Modal>
 
         {/* PRODUCT DETAILS */}
@@ -246,7 +258,6 @@ export default function ProductDetailScreen() {
           <Text style={[s.prodBrand, { color: theme.mutedText }]}>
             Brand: {product.brand}
           </Text>
-
           <View
             style={{ flexDirection: "row", alignItems: "center", marginTop: 6 }}
           >
@@ -259,14 +270,12 @@ export default function ProductDetailScreen() {
               </Text>
             )}
           </View>
-
           <Text
             style={[s.prodDesc, { color: theme.text, opacity: 0.91 }]}
             numberOfLines={7}
           >
             {product.description}
           </Text>
-
           {/* VARIANT PICKER */}
           {product.variants?.length > 0 && (
             <View style={{ marginTop: 12 }}>
@@ -284,7 +293,7 @@ export default function ProductDetailScreen() {
                 showsHorizontalScrollIndicator={false}
                 style={{ flexDirection: "row", gap: 9 }}
               >
-                {product.variants.map((variantOpt: any, idx: number) => (
+                {product.variants.map((variantOpt: any) => (
                   <TouchableOpacity
                     key={variantOpt.sku}
                     onPress={() => {
@@ -326,7 +335,9 @@ export default function ProductDetailScreen() {
               </ScrollView>
             </View>
           )}
-
+          {/* Availability, Shipping, Return Policy, Stepper, Action Buttons, Specs ... */}
+          {/* ... same as your code before ... */}
+          {/* ... OMITTED FOR BREVITY. Paste your previous code for these sections here ... */}
           {/* Availability · Free Shipping · Return Policy */}
           <View style={{ flexDirection: "row", gap: 16, marginTop: 14 }}>
             <View>
@@ -380,8 +391,7 @@ export default function ProductDetailScreen() {
                 : "No Returns"}
             </Text>
           </View>
-
-          {/* QUANTITY + BUTTONS */}
+          {/* Quantity Control */}
           <View
             style={{
               flexDirection: "row",
@@ -453,8 +463,7 @@ export default function ProductDetailScreen() {
               (Max {availableQuantity})
             </Text>
           </View>
-
-          {/* ACTION BUTTONS */}
+          {/* Buttons */}
           <View style={{ flexDirection: "row", gap: 14, marginTop: 18 }}>
             <TouchableOpacity
               style={[
@@ -480,8 +489,7 @@ export default function ProductDetailScreen() {
               <Text style={s.actionBtnText}>Buy Now</Text>
             </TouchableOpacity>
           </View>
-
-          {/* SPECS */}
+          {/* Specs */}
           <View
             style={{
               marginTop: 28,
@@ -515,7 +523,6 @@ export default function ProductDetailScreen() {
             </View>
           </View>
         </View>
-
         {/* RELATED PRODUCTS */}
         {relatedProducts.length > 0 && (
           <View style={{ marginTop: 40, marginBottom: 16 }}>
@@ -586,7 +593,6 @@ export default function ProductDetailScreen() {
   );
 }
 
-// Small component for displaying specs
 function Spec({ label, value }: { label: string; value: string }) {
   return (
     <View style={{ minWidth: "44%", marginBottom: 8 }}>
@@ -598,7 +604,6 @@ function Spec({ label, value }: { label: string; value: string }) {
   );
 }
 
-// --- styles ---
 const s = StyleSheet.create({
   header: {
     flexDirection: "row",
@@ -637,7 +642,15 @@ const s = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  modalCloseBtn: { position: "absolute", top: 25, right: 28, zIndex: 10 },
+  modalCloseBtn: {
+    position: "absolute",
+    top: 38,
+    right: 26,
+    zIndex: 9001,
+    backgroundColor: "rgba(0,0,0,0.3)",
+    borderRadius: 30,
+    padding: 2,
+  },
   modalImg: {
     width: width * 0.9,
     height: width * 0.9,
