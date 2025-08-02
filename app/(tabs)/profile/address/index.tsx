@@ -1,11 +1,13 @@
-import api from "@/api"; // ✅ use custom api instance
+import api from "@/api";
 import { Colors } from "@/constants/Colors";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { useUserInfo } from "@/hooks/useUserInfo";
 import React, { useEffect, useState } from "react";
 import {
   Alert,
-  FlatList,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -43,7 +45,6 @@ export default function AddressScreen() {
   });
 
   const fetchAddresses = async () => {
-    console.log("userInfo", userInfo);
     if (!userInfo?.id) return;
     try {
       const res = await api.get(`/address/${userInfo.id}`);
@@ -129,68 +130,69 @@ export default function AddressScreen() {
   };
 
   return (
-    <FlatList
-      ListHeaderComponent={
-        <>
-          <Text style={[styles.heading, { color: theme.text }]}>
-            Manage Your Addresses
-          </Text>
-          {addresses.map((address, index) => (
-            <View
-              key={index}
-              style={[styles.card, { borderColor: theme.border }]}
-            >
-              <View style={styles.cardRow}>
-                <Text style={[styles.cardTitle, { color: theme.text }]}>
-                  {address.building}
-                </Text>
-                {address.isDefault && (
-                  <Text style={[styles.defaultBadge, { color: theme.tint }]}>
-                    Default
-                  </Text>
-                )}
-              </View>
-              <Text style={[styles.subText, { color: theme.mutedText }]}>
-                {address.street}, {address.city}, {address.state},{" "}
-                {address.zipCode}
+    <KeyboardAvoidingView
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+      style={{ flex: 1 }}
+      keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
+    >
+      <ScrollView contentContainerStyle={{ paddingBottom: 100 }}>
+        <Text style={[styles.heading, { color: theme.text }]}>
+          Manage Your Addresses
+        </Text>
+
+        {addresses.map((address, index) => (
+          <View
+            key={index}
+            style={[styles.card, { borderColor: theme.border }]}
+          >
+            <View style={styles.cardRow}>
+              <Text style={[styles.cardTitle, { color: theme.text }]}>
+                {address.building}
               </Text>
-              <Text style={[styles.subText, { color: theme.mutedText }]}>
-                Mobile: {address.mobileNumber}
-              </Text>
-              {address.landmark && (
-                <Text style={[styles.subText, { color: theme.mutedText }]}>
-                  Landmark: {address.landmark}
+              {address.isDefault && (
+                <Text style={[styles.defaultBadge, { color: theme.tint }]}>
+                  Default
                 </Text>
               )}
-
-              <View style={styles.cardActions}>
-                <TouchableOpacity
-                  onPress={() => handleSetDefault(index)}
-                  disabled={address.isDefault}
-                >
-                  <Text style={[styles.link, { color: theme.tint }]}>
-                    Set Default
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity onPress={() => handleEdit(index)}>
-                  <Text style={[styles.link, { color: theme.tint }]}>Edit</Text>
-                </TouchableOpacity>
-                <TouchableOpacity onPress={() => handleDelete(index)}>
-                  <Text style={[styles.link, { color: theme.destructive }]}>
-                    Delete
-                  </Text>
-                </TouchableOpacity>
-              </View>
             </View>
-          ))}
+            <Text style={[styles.subText, { color: theme.mutedText }]}>
+              {address.street}, {address.city}, {address.state},{" "}
+              {address.zipCode}
+            </Text>
+            <Text style={[styles.subText, { color: theme.mutedText }]}>
+              Mobile: {address.mobileNumber}
+            </Text>
+            {address.landmark && (
+              <Text style={[styles.subText, { color: theme.mutedText }]}>
+                Landmark: {address.landmark}
+              </Text>
+            )}
 
-          <Text style={[styles.subHeading, { color: theme.text }]}>
-            {editIndex !== null ? "Edit Address" : "Add New Address"}
-          </Text>
-        </>
-      }
-      data={[{ key: "form" }]}
-      renderItem={() => (
+            <View style={styles.cardActions}>
+              <TouchableOpacity
+                onPress={() => handleSetDefault(index)}
+                disabled={address.isDefault}
+              >
+                <Text style={[styles.link, { color: theme.tint }]}>
+                  Set Default
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => handleEdit(index)}>
+                <Text style={[styles.link, { color: theme.tint }]}>Edit</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => handleDelete(index)}>
+                <Text style={[styles.link, { color: theme.destructive }]}>
+                  Delete
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        ))}
+
+        <Text style={[styles.subHeading, { color: theme.text }]}>
+          {editIndex !== null ? "Edit Address" : "Add New Address"}
+        </Text>
+
         <View style={{ gap: 10, marginHorizontal: 16, marginBottom: 60 }}>
           {[
             { label: "Flat / House", key: "building" },
@@ -232,8 +234,8 @@ export default function AddressScreen() {
             </Text>
           </TouchableOpacity>
         </View>
-      )}
-    />
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
