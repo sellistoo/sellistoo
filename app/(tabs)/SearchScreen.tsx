@@ -84,7 +84,7 @@ export default function SearchScreen() {
         params.priceMin = filters.price.min;
       if (filters.price.max !== undefined && filters.price.max !== null)
         params.priceMax = filters.price.max;
-
+      console.log(params);
       const res = await api.get("/elestic/products/search", { params });
 
       const newProducts = res.data?.products || [];
@@ -116,26 +116,67 @@ export default function SearchScreen() {
   };
 
   const removeFilter = (type: string, value?: string) => {
+    setPage(1);
     setFilters((prev) => {
+      let updatedFilters = prev;
       if (type === "brand") {
-        return { ...prev, brand: prev.brand.filter((b) => b !== value) };
+        updatedFilters = {
+          ...prev,
+          brand: prev.brand.filter((b) => b !== value),
+        };
       } else if (type === "category") {
-        return { ...prev, category: prev.category.filter((c) => c !== value) };
+        updatedFilters = {
+          ...prev,
+          category: prev.category.filter((c) => c !== value),
+        };
       } else if (type === "availability") {
-        return {
+        updatedFilters = {
           ...prev,
           availability: prev.availability.filter((a) => a !== value),
         };
       } else if (type === "priceMin") {
-        return { ...prev, price: { ...prev.price, min: undefined } };
+        updatedFilters = { ...prev, price: { ...prev.price, min: undefined } };
       } else if (type === "priceMax") {
-        return { ...prev, price: { ...prev.price, max: undefined } };
+        updatedFilters = { ...prev, price: { ...prev.price, max: undefined } };
       } else if (type === "sort") {
-        return { ...prev, sort: "" };
+        updatedFilters = { ...prev, sort: "" };
       }
-      return prev;
+      // Immediately call fetchProducts with the updated filters
+      fetchProductsWithFilters(updatedFilters, 1);
+      return updatedFilters;
     });
-    setPage(1);
+  };
+
+  // Helper function to call the API with new filters and page
+  const fetchProductsWithFilters = async (filtersArg: any, pageArg: any) => {
+    setLoading(true);
+    try {
+      const params: any = {
+        query: debouncedQuery,
+        offset: (pageArg - 1) * PAGE_SIZE,
+        limit: PAGE_SIZE,
+        brands: filtersArg.brand.join(","),
+        categories: filtersArg.category.join(","),
+        availability: filtersArg.availability.join(","),
+        sort: filtersArg.sort,
+      };
+      if (filtersArg.price.min !== undefined && filtersArg.price.min !== null)
+        params.priceMin = filtersArg.price.min;
+      if (filtersArg.price.max !== undefined && filtersArg.price.max !== null)
+        params.priceMax = filtersArg.price.max;
+      console.log("params", params);
+      const res = await api.get("/elestic/products/search", { params });
+
+      const newProducts = res.data?.products || [];
+      setProducts(newProducts);
+      setAvailableBrands(res.data.availableBrands || []);
+      setAvailableCategories(res.data.availableCategories || []);
+      setHasMore(newProducts.length === PAGE_SIZE);
+    } catch (err) {
+      console.error("Failed to fetch products", err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const renderItem = ({ item }: { item: any }) => {
