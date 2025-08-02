@@ -53,12 +53,12 @@ export default function ShopsScreen() {
         styles.card,
         { backgroundColor: theme.cardBg, borderColor: theme.border },
       ]}
-      onPress={() => {
+      onPress={() =>
         router.push({
           pathname: "/shops/[shopId]",
           params: { shopId: item._id },
-        });
-      }}
+        })
+      }
     >
       <View style={styles.logoContainer}>
         <Image

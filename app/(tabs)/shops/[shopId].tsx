@@ -1,11 +1,13 @@
 import api from "@/api";
 import { useCart } from "@/hooks/useCart";
+import { useNavigation } from "@react-navigation/native";
 import { useLocalSearchParams } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
   Image,
+  SafeAreaView,
   StyleSheet,
   Text,
   TextInput,
@@ -31,11 +33,12 @@ interface Shop {
   userId: string;
 }
 
-const itemsPerPage = 20; // for mobile
+const itemsPerPage = 20;
 const shopBannerPlaceholder = "https://placehold.co/400x100?text=Shop+Banner";
 
 export default function ShopScreen() {
   const { shopId } = useLocalSearchParams();
+  const navigation = useNavigation();
   const { addToCart } = useCart();
 
   const [shop, setShop] = useState<Shop | null>(null);
@@ -47,10 +50,10 @@ export default function ShopScreen() {
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
 
-  // Debounce searchTerm with 500ms delay
+  // Debounce search input
   useEffect(() => {
-    const handler = setTimeout(() => setDebouncedSearchTerm(searchTerm), 500);
-    return () => clearTimeout(handler);
+    const timeout = setTimeout(() => setDebouncedSearchTerm(searchTerm), 500);
+    return () => clearTimeout(timeout);
   }, [searchTerm]);
 
   // Fetch shop info
@@ -60,9 +63,9 @@ export default function ShopScreen() {
       try {
         const res = await api.get(`/sellers/shop/${shopId}`);
         setShop(res.data);
-      } catch (err) {
+      } catch (e) {
         setShop(null);
-        console.error("Failed to fetch shop:", err);
+        console.error("Failed to fetch shop:", e);
       } finally {
         setLoading(false);
       }
@@ -70,7 +73,14 @@ export default function ShopScreen() {
     if (shopId) fetchShop();
   }, [shopId]);
 
-  // Load products
+  // Update native header title after shop data loaded
+  useEffect(() => {
+    if (shop?.storeName) {
+      navigation.setOptions({ title: shop.storeName });
+    }
+  }, [shop?.storeName, navigation]);
+
+  // Fetch products for the shop
   const loadProducts = useCallback(
     async (reset = false) => {
       if (!shop?.userId) return;
@@ -93,16 +103,16 @@ export default function ShopScreen() {
             },
           }
         );
-        const data = res.data;
 
+        const data = res.data;
         setProducts((prev) =>
           reset || currentPage === 1
             ? data?.data || []
             : [...prev, ...(data?.data || [])]
         );
         setTotal(data?.total?.value || 0);
-      } catch (err) {
-        console.error("Failed to fetch products:", err);
+      } catch (e) {
+        console.error("Failed to fetch products:", e);
         if (reset || currentPage === 1) setProducts([]);
         setTotal(0);
       } finally {
@@ -113,20 +123,21 @@ export default function ShopScreen() {
     [shop?.userId, debouncedSearchTerm, page]
   );
 
-  // Initial and debounced search fetch
+  // Reload products on userId or search term change
   useEffect(() => {
     if (shop?.userId) {
       loadProducts(true);
     }
   }, [shop?.userId, debouncedSearchTerm]);
 
-  // Pagination fetch
+  // Load more products on page increment
   useEffect(() => {
     if (shop?.userId && page > 1) {
       loadProducts();
     }
   }, [page]);
 
+  // Handle add to cart
   const onAddToCart = (product: Product) => {
     addToCart({
       product: product._id || product.id,
@@ -145,6 +156,7 @@ export default function ShopScreen() {
       </View>
     );
   }
+
   if (!shop) {
     return (
       <View style={styles.centered}>
@@ -154,115 +166,114 @@ export default function ShopScreen() {
   }
 
   return (
-    <FlatList
-      data={products}
-      keyExtractor={(item) => item.id || item._id}
-      numColumns={2}
-      contentContainerStyle={styles.list}
-      onEndReached={() => {
-        if (products.length < total && !fetchingMore) {
-          setPage((prev) => prev + 1);
-        }
-      }}
-      onEndReachedThreshold={0.5}
-      ListHeaderComponent={
-        <>
-          <Image
-            source={{ uri: shop.storeBannerUrl || shopBannerPlaceholder }}
-            style={styles.banner}
-            resizeMode="cover"
+    <SafeAreaView style={styles.container}>
+      {/* Banner, description, and search section */}
+      <View>
+        <Image
+          source={{ uri: shop.storeBannerUrl || shopBannerPlaceholder }}
+          style={styles.banner}
+          resizeMode="cover"
+        />
+        <View style={styles.shopInfoContainer}>
+          {!!shop.storeDescription && (
+            <Text style={styles.shopDesc}>{shop.storeDescription}</Text>
+          )}
+          <TextInput
+            style={styles.searchInput}
+            value={searchTerm}
+            onChangeText={setSearchTerm}
+            placeholder="Search products..."
+            returnKeyType="search"
+            clearButtonMode="while-editing"
           />
-          <View style={styles.header}>
-            <Text style={styles.shopName}>{shop.storeName}</Text>
-            {!!shop.storeDescription && (
-              <Text style={styles.shopDesc}>{shop.storeDescription}</Text>
-            )}
-            <TextInput
-              style={styles.searchInput}
-              value={searchTerm}
-              onChangeText={setSearchTerm}
-              placeholder="Search products..."
-              returnKeyType="search"
-            />
-            {loading && products.length === 0 && (
-              <ActivityIndicator style={{ marginVertical: 60 }} />
-            )}
-            {!loading && products.length === 0 && (
-              <Text style={{ alignSelf: "center", margin: 30, color: "#888" }}>
-                No products found.
-              </Text>
-            )}
-          </View>
-        </>
-      }
-      renderItem={({ item }) => (
-        <View style={styles.card}>
-          <Image
-            source={{ uri: item.images?.[0] ?? "https://placehold.co/150" }}
-            style={styles.productImg}
-            resizeMode="cover"
-          />
-          <Text style={styles.pName} numberOfLines={1}>
-            {item.name}
-          </Text>
-          <View style={{ flexDirection: "row", alignItems: "center" }}>
-            {item.salePrice ? (
-              <>
-                <Text style={styles.pSale}>₹{item.salePrice}</Text>
-                <Text style={styles.pPrice}>₹{item.price}</Text>
-              </>
-            ) : (
-              <Text style={styles.pSale}>₹{item.price}</Text>
-            )}
-          </View>
-          <TouchableOpacity
-            style={styles.addBtn}
-            onPress={() => onAddToCart(item)}
-          >
-            <Text style={styles.addBtnText}>Add to Cart</Text>
-          </TouchableOpacity>
         </View>
+      </View>
+
+      {/* Scrollable product list */}
+      {loading && products.length === 0 ? (
+        <ActivityIndicator style={{ marginTop: 40 }} size="large" />
+      ) : products.length === 0 ? (
+        <View style={styles.centered}>
+          <Text>No products found.</Text>
+        </View>
+      ) : (
+        <FlatList
+          data={products}
+          keyExtractor={(item) => item.id || item._id}
+          numColumns={2}
+          contentContainerStyle={styles.listContent}
+          onEndReached={() => {
+            if (products.length < total && !fetchingMore) {
+              setPage((prev) => prev + 1);
+            }
+          }}
+          onEndReachedThreshold={0.5}
+          ListFooterComponent={
+            fetchingMore ? <ActivityIndicator style={{ margin: 12 }} /> : null
+          }
+          renderItem={({ item }) => (
+            <View style={styles.card}>
+              <Image
+                source={{ uri: item.images?.[0] ?? "https://placehold.co/150" }}
+                style={styles.productImg}
+                resizeMode="cover"
+              />
+              <Text style={styles.pName} numberOfLines={1}>
+                {item.name}
+              </Text>
+              <View style={{ flexDirection: "row", alignItems: "center" }}>
+                {item.salePrice ? (
+                  <>
+                    <Text style={styles.pSale}>₹{item.salePrice}</Text>
+                    <Text style={styles.pPrice}>₹{item.price}</Text>
+                  </>
+                ) : (
+                  <Text style={styles.pSale}>₹{item.price}</Text>
+                )}
+              </View>
+              <TouchableOpacity
+                style={styles.addBtn}
+                onPress={() => onAddToCart(item)}
+              >
+                <Text style={styles.addBtnText}>Add to Cart</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        />
       )}
-      ListFooterComponent={
-        fetchingMore ? <ActivityIndicator style={{ margin: 12 }} /> : null
-      }
-    />
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: "#fff" },
   banner: {
     width: "100%",
     height: 120,
-    borderBottomLeftRadius: 18,
-    borderBottomRightRadius: 18,
+    borderBottomLeftRadius: 16,
+    borderBottomRightRadius: 16,
   },
-  header: {
-    padding: 18,
-    paddingBottom: 6,
-  },
-  shopName: {
-    fontSize: 26,
-    fontWeight: "bold",
-    marginBottom: 5,
+  shopInfoContainer: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: "#fff",
   },
   shopDesc: {
     fontSize: 14,
     color: "#666",
-    marginBottom: 12,
+    marginBottom: 8,
   },
   searchInput: {
+    backgroundColor: "#f7f7f7",
+    borderRadius: 16,
     borderWidth: 1,
     borderColor: "#eee",
-    borderRadius: 16,
     paddingHorizontal: 14,
     paddingVertical: 10,
     fontSize: 15,
-    backgroundColor: "#f7f7f7",
-    marginBottom: 8,
   },
-  list: {
-    padding: 10,
+  listContent: {
+    paddingHorizontal: 10,
     paddingBottom: 70,
   },
   card: {
