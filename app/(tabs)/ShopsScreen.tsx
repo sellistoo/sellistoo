@@ -1,6 +1,7 @@
-import api from "@/api"; // Use your api instance here
+import api from "@/api";
 import { Colors } from "@/constants/Colors";
 import { useColorScheme } from "@/hooks/useColorScheme";
+import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -23,6 +24,7 @@ interface Shop {
 export default function ShopsScreen() {
   const colorScheme = useColorScheme();
   const theme = Colors[colorScheme ?? "light"];
+  const router = useRouter();
 
   const [shops, setShops] = useState<Shop[]>([]);
   const [loading, setLoading] = useState(false);
@@ -33,7 +35,6 @@ export default function ShopsScreen() {
       setLoading(true);
       setError(null);
       try {
-        // Assuming your API endpoint for shops is "/sellers/shop"
         const res = await api.get("/sellers/shop");
         setShops(res.data || []);
       } catch (err) {
@@ -53,8 +54,10 @@ export default function ShopsScreen() {
         { backgroundColor: theme.cardBg, borderColor: theme.border },
       ]}
       onPress={() => {
-        console.log("Pressed:", item.storeName);
-        // TODO: Navigate to shop details if navigation implemented
+        router.push({
+          pathname: "/shops/[shopId]",
+          params: { shopId: item._id },
+        });
       }}
     >
       <View style={styles.logoContainer}>
