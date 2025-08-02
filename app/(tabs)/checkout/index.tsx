@@ -1,14 +1,19 @@
 import api from "@/api";
+import { Colors } from "@/constants/Colors";
 import { useCart } from "@/hooks/useCart";
 import { useUserInfo } from "@/hooks/useUserInfo";
+import { Feather, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import React, { useEffect, useState } from "react";
 import {
   Alert,
   Image,
   KeyboardAvoidingView,
   Platform,
+  SafeAreaView,
   ScrollView,
   StyleSheet,
+  TouchableOpacity,
+  useColorScheme,
   View,
 } from "react-native";
 import {
@@ -16,13 +21,10 @@ import {
   Button,
   Card,
   Divider,
-  IconButton,
-  RadioButton,
   Text,
   TextInput,
 } from "react-native-paper";
 
-// --- DATA MODELS ---
 export interface Address {
   building: string;
   street: string;
@@ -98,6 +100,9 @@ const CheckoutScreen: React.FC = () => {
   const [couponError, setCouponError] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
 
+  const colorScheme = useColorScheme() ?? "light";
+  const theme = Colors[colorScheme];
+
   // Fetch Addresses
   useEffect(() => {
     const fn = async () => {
@@ -106,7 +111,6 @@ const CheckoutScreen: React.FC = () => {
         setLoading(true);
         const res = await api.get<Address[]>(`/address/${userInfo.id}`);
         setAddresses(res.data ?? []);
-        // Auto-select default if any:
         const defIdx = (res.data ?? []).findIndex((a) => a.isDefault);
         setSelectedIdx(defIdx !== -1 ? defIdx : 0);
       } catch (e) {
@@ -241,367 +245,674 @@ const CheckoutScreen: React.FC = () => {
     }
   };
 
-  // --------------- UI RENDER ---------------
+  // -------- UI RENDER --------
   return (
-    <KeyboardAvoidingView
-      style={{ flex: 1 }}
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
-    >
-      <ScrollView
-        style={{ flex: 1, backgroundColor: "#fafaff" }}
-        contentContainerStyle={s.container}
-        keyboardShouldPersistTaps="handled"
+    <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }}>
+      <KeyboardAvoidingView
+        style={{ flex: 1, backgroundColor: theme.background }}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
-        <Text
-          variant="headlineMedium"
-          style={{ marginBottom: 12, marginTop: 16 }}
+        <ScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={[
+            style.container,
+            { backgroundColor: theme.background },
+          ]}
+          keyboardShouldPersistTaps="handled"
         >
-          Checkout
-        </Text>
+          {/* HEADER */}
+          <View style={style.headerRow}>
+            <Ionicons
+              name="cart-outline"
+              size={32}
+              color={theme.tint}
+              style={{ marginRight: 8 }}
+            />
+            <Text
+              variant="headlineMedium"
+              style={[style.headline, { color: theme.text }]}
+            >
+              Checkout
+            </Text>
+          </View>
 
-        {/* Address Section */}
-        <Card style={s.card}>
-          <Card.Title title="Delivery Address" />
-          <Card.Content>
-            {addresses.length === 0 ? (
-              <Text>No address found. Please add one below.</Text>
-            ) : (
-              addresses.map((address, idx) => (
-                <Card
-                  key={idx}
-                  style={[
-                    s.addrCard,
-                    selectedIdx === idx && {
-                      borderColor: "#6200ee",
-                      backgroundColor: "#ede7f6",
-                    },
-                  ]}
-                  onPress={() => setSelectedIdx(idx)}
+          {/* Address Section */}
+          <View style={{ marginBottom: 18 }}>
+            <Text style={[style.sectionTitle, { color: theme.tint }]}>
+              Delivery Address
+            </Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={{ marginVertical: 8 }}
+            >
+              {addresses.length === 0 ? (
+                <View style={style.emptyState}>
+                  <Feather name="map-pin" size={24} color={theme.border} />
+                  <Text style={{ color: theme.mutedText, marginLeft: 7 }}>
+                    No address. Add below!
+                  </Text>
+                </View>
+              ) : (
+                addresses.map((address, idx) => (
+                  <TouchableOpacity
+                    activeOpacity={0.87}
+                    key={address.building + address.street + idx}
+                    style={[
+                      style.addrBubble,
+                      {
+                        borderColor:
+                          selectedIdx === idx ? theme.tint : theme.border,
+                        backgroundColor:
+                          selectedIdx === idx ? theme.tint : theme.cardBg,
+                        shadowColor: selectedIdx === idx ? theme.tint : "#EEE",
+                        shadowOpacity: selectedIdx === idx ? 0.17 : 0.07,
+                      },
+                    ]}
+                    onPress={() => setSelectedIdx(idx)}
+                  >
+                    <View style={{ flex: 1 }}>
+                      <Text
+                        style={[
+                          style.addr,
+                          selectedIdx === idx && { color: theme.background },
+                        ]}
+                      >
+                        {address.building}, {address.street}
+                      </Text>
+                      <Text
+                        style={[
+                          style.addrSmall,
+                          selectedIdx === idx && { color: theme.secondary },
+                        ]}
+                      >
+                        {address.city}, {address.state}, {address.zipCode}
+                      </Text>
+                      <Text
+                        style={[
+                          style.addrSmall,
+                          selectedIdx === idx && { color: theme.secondary },
+                        ]}
+                      >
+                        📞 {address.mobileNumber}
+                      </Text>
+                    </View>
+                    {selectedIdx === idx && (
+                      <MaterialCommunityIcons
+                        name="check-decagram"
+                        size={22}
+                        color={theme.success}
+                        style={style.addrSelectedIcon}
+                      />
+                    )}
+                  </TouchableOpacity>
+                ))
+              )}
+            </ScrollView>
+            <View style={{ flexDirection: "row", alignItems: "center" }}>
+              <Button
+                mode="text"
+                icon="plus-circle-outline"
+                onPress={() => setShowAddAddress((p) => !p)}
+                labelStyle={{ color: theme.accent, fontWeight: "600" }}
+              >
+                Add Address
+              </Button>
+              {addresses.length > 0 && (
+                <Button
+                  mode="contained"
+                  style={{
+                    backgroundColor: theme.accent,
+                    borderRadius: 20,
+                    marginLeft: 6,
+                    height: 36,
+                    justifyContent: "center",
+                  }}
+                  onPress={() => {
+                    if (selectedIdx === null) {
+                      Alert.alert("Please select an address.");
+                    }
+                  }}
+                  labelStyle={{ fontWeight: "700", color: theme.background }}
                 >
+                  Deliver Here
+                </Button>
+              )}
+            </View>
+            {showAddAddress && (
+              <Card
+                style={[
+                  style.addAddressCard,
+                  { borderColor: theme.tint },
+                  { backgroundColor: theme.secondary },
+                ]}
+              >
+                <Card.Content>
+                  {(
+                    Object.keys(
+                      initialAddress
+                    ) as (keyof typeof initialAddress)[]
+                  ).map((field) => (
+                    <TextInput
+                      key={field}
+                      mode="outlined"
+                      label={field.charAt(0).toUpperCase() + field.slice(1)}
+                      placeholder={
+                        field === "landmark" ? "(Optional) " + field : field
+                      }
+                      value={newAddress[field] ?? ""}
+                      keyboardType={
+                        field === "mobileNumber" || field === "zipCode"
+                          ? "number-pad"
+                          : "default"
+                      }
+                      maxLength={
+                        field === "mobileNumber"
+                          ? 10
+                          : field === "zipCode"
+                          ? 6
+                          : undefined
+                      }
+                      onChangeText={(val: string) => {
+                        let txt = val;
+                        if (field === "mobileNumber" || field === "zipCode")
+                          txt = txt.replace(/\D/g, "");
+                        setNewAddress({ ...newAddress, [field]: txt });
+                      }}
+                      style={{
+                        backgroundColor: theme.cardBg,
+                        marginBottom: 7,
+                        fontSize: 15,
+                      }}
+                      outlineColor={theme.border}
+                      activeOutlineColor={theme.tint}
+                    />
+                  ))}
                   <View
                     style={{
                       flexDirection: "row",
-                      alignItems: "center",
-                      justifyContent: "space-between",
+                      justifyContent: "flex-end",
+                      gap: 10,
                     }}
                   >
-                    <View style={{ flex: 1 }}>
-                      <Text style={s.addr}>
-                        {address.building}, {address.street}
-                      </Text>
-                      <Text style={s.addrSmall}>
-                        {address.city}, {address.state}, {address.zipCode}
-                      </Text>
-                      <Text style={s.addrSmall}>📞 {address.mobileNumber}</Text>
-                    </View>
-                    {address.isDefault && (
-                      <Text
-                        style={{
-                          color: "#6200ee",
-                          fontWeight: "bold",
-                          fontSize: 12,
-                          backgroundColor: "#ede7f6",
-                          padding: 2,
-                          borderRadius: 3,
-                        }}
-                      >
-                        Default
-                      </Text>
-                    )}
-                    <RadioButton
-                      value={String(idx)}
-                      status={selectedIdx === idx ? "checked" : "unchecked"}
-                      onPress={() => setSelectedIdx(idx)}
+                    <Button
+                      mode="contained"
+                      icon="content-save"
+                      buttonColor={theme.success}
+                      textColor={theme.background}
+                      style={{ borderRadius: 20 }}
+                      onPress={handleAddAddress}
+                      loading={loading}
+                    >
+                      Save
+                    </Button>
+                    <Button
+                      mode="text"
+                      onPress={() => setShowAddAddress(false)}
+                    >
+                      Cancel
+                    </Button>
+                  </View>
+                </Card.Content>
+              </Card>
+            )}
+          </View>
+
+          {/* Order Summary List */}
+          <View style={{ marginBottom: 18 }}>
+            <Text style={[style.sectionTitle, { color: theme.tint }]}>
+              Order Summary
+            </Text>
+            <Card
+              style={[
+                style.card,
+                {
+                  marginBottom: 2,
+                  borderRadius: 20,
+                  backgroundColor: theme.cardBg,
+                },
+              ]}
+            >
+              <Card.Content>
+                {cartItems.length === 0 ? (
+                  <View style={style.emptyState}>
+                    <MaterialCommunityIcons
+                      name="shopping-outline"
+                      size={24}
+                      color={theme.border}
                     />
-                  </View>
-                </Card>
-              ))
-            )}
-
-            {showAddAddress ? (
-              <View style={{ marginTop: 16 }}>
-                {(
-                  Object.keys(initialAddress) as (keyof typeof initialAddress)[]
-                ).map((field) => (
-                  <TextInput
-                    key={field}
-                    style={{ marginBottom: 8, backgroundColor: "#fff" }}
-                    label={field.charAt(0).toUpperCase() + field.slice(1)}
-                    placeholder={
-                      field === "landmark" ? "(Optional) " + field : field
-                    }
-                    value={newAddress[field] ?? ""}
-                    keyboardType={
-                      field === "mobileNumber" || field === "zipCode"
-                        ? "number-pad"
-                        : "default"
-                    }
-                    maxLength={
-                      field === "mobileNumber"
-                        ? 10
-                        : field === "zipCode"
-                        ? 6
-                        : undefined
-                    }
-                    onChangeText={(val: string) => {
-                      let txt = val;
-                      if (field === "mobileNumber" || field === "zipCode")
-                        txt = txt.replace(/\D/g, "");
-                      setNewAddress({ ...newAddress, [field]: txt });
-                    }}
-                  />
-                ))}
-
-                <Button
-                  icon="content-save"
-                  mode="contained"
-                  style={{ marginTop: 10 }}
-                  onPress={handleAddAddress}
-                  loading={loading}
-                >
-                  Save Address
-                </Button>
-                <Button
-                  style={{ marginTop: 4 }}
-                  mode="text"
-                  onPress={() => setShowAddAddress(false)}
-                >
-                  Cancel
-                </Button>
-              </View>
-            ) : (
-              <Button
-                style={{ marginTop: 14 }}
-                icon="plus"
-                mode="outlined"
-                onPress={() => setShowAddAddress(true)}
-              >
-                Add New Address
-              </Button>
-            )}
-          </Card.Content>
-        </Card>
-
-        {/* Order summary list */}
-        <Card style={s.card}>
-          <Card.Title title="Order Summary" />
-          <Card.Content>
-            {cartItems.length === 0 ? (
-              <Text>Your cart is empty.</Text>
-            ) : (
-              cartItems.map((item, idx) => (
-                <View key={item.product + (item.sku ?? "")} style={s.cartRow}>
-                  <Image source={{ uri: item.image }} style={s.cartImg} />
-                  <View style={{ flex: 1, marginHorizontal: 12 }}>
-                    <Text style={{ fontWeight: "bold" }}>{item.name}</Text>
-                    <Text style={{ color: "#888" }}>
-                      ₹{item.price} × {item.quantity}
+                    <Text style={{ color: theme.mutedText, marginLeft: 6 }}>
+                      Your cart is empty.
                     </Text>
+                  </View>
+                ) : (
+                  cartItems.map((item, idx) => (
                     <View
-                      style={{
-                        flexDirection: "row",
-                        alignItems: "center",
-                        marginVertical: 3,
-                      }}
+                      key={item.product + (item.sku ?? "")}
+                      style={[
+                        style.cartRow,
+                        {
+                          backgroundColor: theme.secondary,
+                          borderRadius: 18,
+                          marginBottom: 8,
+                          minHeight: 85,
+                          elevation: 1,
+                          shadowColor: "#282828",
+                          shadowOpacity: 0.05,
+                          shadowRadius: 7,
+                        },
+                      ]}
                     >
-                      <Button
-                        icon="close"
-                        mode="text"
-                        compact
-                        onPress={() => removeFromCart(item.product, item.sku)}
-                        labelStyle={{ color: "red" }}
-                        accessibilityLabel="Remove item"
-                      >
-                        {""}
-                      </Button>
-                    </View>
-                    <View
-                      style={{
-                        flexDirection: "row",
-                        alignItems: "center",
-                        marginVertical: 3,
-                      }}
-                    >
-                      <IconButton
-                        icon="minus"
-                        disabled={item.quantity <= 1}
-                        onPress={() =>
-                          updateQuantity(
-                            item.product,
-                            item.sku,
-                            item.quantity - 1
-                          )
-                        }
-                        accessibilityLabel="Decrease quantity"
-                        size={20}
-                        style={{ marginRight: 2 }}
+                      <Image
+                        source={{ uri: item.image }}
+                        style={style.cartImg}
+                        resizeMode="cover"
                       />
-
-                      <Text
+                      <View
                         style={{
-                          minWidth: 28,
-                          textAlign: "center",
-                          fontWeight: "bold",
+                          flex: 1,
+                          marginHorizontal: 10,
+                          paddingRight: 7,
                         }}
                       >
-                        {item.quantity}
+                        <Text
+                          style={{
+                            fontWeight: "bold",
+                            fontSize: 15,
+                            color: theme.text,
+                          }}
+                        >
+                          {item.name}
+                        </Text>
+                        <Text
+                          style={{
+                            color: theme.mutedText,
+                            marginTop: 1,
+                            marginBottom: 3,
+                          }}
+                        >
+                          ₹{item.price} × {item.quantity}
+                        </Text>
+                        {(item?.variant?.size || item?.variant?.color) && (
+                          <Text style={{ fontSize: 13, color: theme.tint }}>
+                            {item?.variant?.size
+                              ? `Size: ${item.variant.size} `
+                              : ""}
+                            {item?.variant?.color
+                              ? `Color: ${item.variant.color}`
+                              : ""}
+                          </Text>
+                        )}
+                        <View style={style.cartControlRow}>
+                          <TouchableOpacity
+                            disabled={item.quantity <= 1}
+                            onPress={() =>
+                              updateQuantity(
+                                item.product,
+                                item.sku,
+                                item.quantity - 1
+                              )
+                            }
+                            style={[
+                              style.stepperBtn,
+                              {
+                                backgroundColor:
+                                  item.quantity <= 1
+                                    ? theme.border
+                                    : theme.tint,
+                              },
+                            ]}
+                          >
+                            <Feather
+                              name="minus"
+                              size={18}
+                              color={theme.cardBg}
+                            />
+                          </TouchableOpacity>
+                          <Text style={style.quantityText}>
+                            {item.quantity}
+                          </Text>
+                          <TouchableOpacity
+                            onPress={() =>
+                              updateQuantity(
+                                item.product,
+                                item.sku,
+                                item.quantity + 1
+                              )
+                            }
+                            style={[
+                              style.stepperBtn,
+                              { backgroundColor: theme.accent },
+                            ]}
+                          >
+                            <Feather name="plus" size={18} color="#fff" />
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            onPress={() =>
+                              removeFromCart(item.product, item.sku)
+                            }
+                            style={style.deleteBtn}
+                          >
+                            <MaterialCommunityIcons
+                              name="delete"
+                              size={20}
+                              color={theme.destructive}
+                            />
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                      <Text
+                        style={{
+                          fontWeight: "bold",
+                          fontSize: 16,
+                          alignSelf: "flex-end",
+                          color: theme.text,
+                        }}
+                      >
+                        ₹{(item.price * item.quantity).toFixed(2)}
                       </Text>
-
-                      <IconButton
-                        icon="plus"
-                        onPress={() =>
-                          updateQuantity(
-                            item.product,
-                            item.sku,
-                            item.quantity + 1
-                          )
-                        }
-                        accessibilityLabel="Increase quantity"
-                        size={20}
-                        style={{ marginLeft: 2 }}
-                      />
-
-                      <IconButton
-                        icon="close"
-                        onPress={() => removeFromCart(item.product, item.sku)}
-                        accessibilityLabel="Remove item"
-                        size={20}
-                        style={{ marginLeft: 2 }}
-                        iconColor="red"
-                      />
                     </View>
-                  </View>
-                  <Text style={{ fontWeight: "bold" }}>
-                    ₹{(item.price * item.quantity).toFixed(2)}
+                  ))
+                )}
+              </Card.Content>
+            </Card>
+          </View>
+
+          {/* Payment & Price Summary */}
+          <View>
+            <Text style={[style.sectionTitle, { color: theme.tint }]}>
+              Payment & Price Summary
+            </Text>
+            <Card
+              style={[
+                style.card,
+                { borderRadius: 20, backgroundColor: theme.cardBg },
+              ]}
+            >
+              <Card.Content>
+                <View style={style.summaryRow}>
+                  <Text style={{ color: theme.mutedText }}>Subtotal</Text>
+                  <Text style={style.summaryValue}>
+                    ₹
+                    {cartItems
+                      .reduce((t, x) => t + x.price * x.quantity, 0)
+                      .toFixed(2)}
                   </Text>
                 </View>
-              ))
-            )}
-          </Card.Content>
-        </Card>
-
-        {/* Payment & Price Summary */}
-        <Card style={s.card}>
-          <Card.Title title="Payment & Price Summary" />
-          <Card.Content>
-            <View
-              style={{ flexDirection: "row", justifyContent: "space-between" }}
-            >
-              <Text>Subtotal:</Text>
-              <Text>
-                ₹
-                {cartItems
-                  .reduce((t, x) => t + x.price * x.quantity, 0)
-                  .toFixed(2)}
-              </Text>
-            </View>
-            <View
-              style={{ flexDirection: "row", justifyContent: "space-between" }}
-            >
-              <Text>Shipping:</Text>
-              <Text>₹{shippingCost.toFixed(2)}</Text>
-            </View>
-            <Divider style={{ marginVertical: 8 }} />
-            {/* Coupon */}
-            <TextInput
-              label="Apply Coupon"
-              placeholder="Enter coupon code"
-              value={couponCode}
-              onChangeText={setCouponCode}
-              style={{ marginBottom: 4, backgroundColor: "#fff" }}
-              right={<TextInput.Icon icon="tag" />}
+                <View style={style.summaryRow}>
+                  <Text style={{ color: theme.mutedText }}>Shipping</Text>
+                  <Text style={style.summaryValue}>
+                    ₹{shippingCost.toFixed(2)}
+                  </Text>
+                </View>
+                <Divider
+                  style={{ marginVertical: 6, backgroundColor: theme.border }}
+                />
+                {/* Coupon */}
+                <View style={style.couponBar}>
+                  <TextInput
+                    mode="outlined"
+                    label="Coupon"
+                    placeholder="Have a code?"
+                    value={couponCode}
+                    onChangeText={setCouponCode}
+                    style={{
+                      backgroundColor: theme.input,
+                      flex: 1,
+                      borderRadius: 10,
+                    }}
+                    outlineColor={theme.border}
+                    activeOutlineColor={theme.tint}
+                    right={
+                      <TextInput.Icon
+                        icon={() => (
+                          <Feather name="tag" size={18} color={theme.accent} />
+                        )}
+                      />
+                    }
+                  />
+                  <Button
+                    mode="contained"
+                    style={{
+                      borderRadius: 14,
+                      marginLeft: 8,
+                      backgroundColor: theme.success,
+                      height: 38,
+                    }}
+                    onPress={handleApplyCoupon}
+                    loading={loading}
+                    labelStyle={{ fontWeight: "600", color: theme.cardBg }}
+                  >
+                    Apply
+                  </Button>
+                </View>
+                {couponError ? (
+                  <Text style={{ color: theme.destructive, marginTop: 4 }}>
+                    {couponError}
+                  </Text>
+                ) : null}
+                {appliedCoupon ? (
+                  <Text
+                    style={{
+                      color: theme.success,
+                      marginTop: 3,
+                      fontWeight: "bold",
+                    }}
+                  >
+                    ✓ Coupon {appliedCoupon} applied. Saved ₹{discountAmount}
+                  </Text>
+                ) : null}
+                {discountAmount > 0 && (
+                  <View style={style.summaryRow}>
+                    <Text style={{ color: theme.success, fontWeight: "bold" }}>
+                      Discount
+                    </Text>
+                    <Text style={{ color: theme.success, fontWeight: "bold" }}>
+                      -₹{discountAmount.toFixed(2)}
+                    </Text>
+                  </View>
+                )}
+                <Divider
+                  style={{ marginVertical: 5, backgroundColor: theme.border }}
+                />
+                <View style={style.summaryRow}>
+                  <Text
+                    variant="titleMedium"
+                    style={{ fontWeight: "bold", color: theme.text }}
+                  >
+                    Total Payable
+                  </Text>
+                  <Text
+                    variant="titleMedium"
+                    style={{ fontWeight: "bold", color: theme.text }}
+                  >
+                    ₹{(calculateTotal() - discountAmount).toFixed(2)}
+                  </Text>
+                </View>
+                <Button
+                  mode="contained"
+                  style={{
+                    marginTop: 16,
+                    borderRadius: 23,
+                    height: 48,
+                    backgroundColor: theme.tint,
+                    shadowOpacity: 0.13,
+                  }}
+                  onPress={handlePlaceOrder}
+                  loading={loading}
+                  disabled={cartItems.length === 0 || selectedIdx === null}
+                  labelStyle={{
+                    fontSize: 18,
+                    fontWeight: "700",
+                    letterSpacing: 0.5,
+                    color: theme.background,
+                  }}
+                  icon={() => (
+                    <Ionicons
+                      name="flash-outline"
+                      size={22}
+                      color={theme.background}
+                    />
+                  )}
+                >
+                  Place Order
+                </Button>
+              </Card.Content>
+            </Card>
+          </View>
+          {loading && (
+            <ActivityIndicator
+              color={theme.tint}
+              size="large"
+              style={{ marginTop: 16 }}
             />
-            <Button
-              mode="outlined"
-              onPress={handleApplyCoupon}
-              loading={loading}
-              style={{ marginBottom: 4 }}
-            >
-              Apply
-            </Button>
-            {couponError ? (
-              <Text style={{ color: "red" }}>{couponError}</Text>
-            ) : null}
-            {appliedCoupon ? (
-              <Text style={{ color: "green" }}>
-                `Coupon {appliedCoupon} applied. Saved ₹{discountAmount}`
-              </Text>
-            ) : null}
-            {discountAmount > 0 && (
-              <View
-                style={{
-                  flexDirection: "row",
-                  justifyContent: "space-between",
-                }}
-              >
-                <Text style={{ color: "green", fontWeight: "bold" }}>
-                  Discount:
-                </Text>
-                <Text style={{ color: "green", fontWeight: "bold" }}>
-                  - ₹{discountAmount.toFixed(2)}
-                </Text>
-              </View>
-            )}
-            <Divider style={{ marginVertical: 8 }} />
-            <View
-              style={{ flexDirection: "row", justifyContent: "space-between" }}
-            >
-              <Text variant="titleMedium">Total Payable:</Text>
-              <Text variant="titleMedium">
-                ₹{(calculateTotal() - discountAmount).toFixed(2)}
-              </Text>
-            </View>
-            <Button
-              mode="contained"
-              style={{ marginTop: 14 }}
-              onPress={handlePlaceOrder}
-              loading={loading}
-              disabled={cartItems.length === 0 || selectedIdx === null}
-            >
-              Place Order
-            </Button>
-          </Card.Content>
-        </Card>
-
-        {loading ? (
-          <ActivityIndicator size="large" style={{ marginTop: 15 }} />
-        ) : null}
-      </ScrollView>
-    </KeyboardAvoidingView>
+          )}
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 };
 
-const s = StyleSheet.create({
-  card: {
-    marginBottom: 18,
-    borderRadius: 16,
-    overflow: "hidden",
+// ----------- STYLES -----------
+const style = StyleSheet.create({
+  container: {
+    padding: 14,
+    paddingBottom: 32,
+    gap: 8,
   },
-  addrCard: {
-    borderWidth: 2,
-    borderColor: "#eee",
-    backgroundColor: "#fff",
-    marginBottom: 8,
-    borderRadius: 10,
+  headerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingTop: 16,
+    marginBottom: 7,
+  },
+  headline: {
+    fontWeight: "800",
+    fontSize: 28,
+    letterSpacing: -1,
+  },
+  sectionTitle: {
+    fontSize: 19,
+    marginBottom: 7,
+    fontWeight: "700",
+    paddingLeft: 1,
+    letterSpacing: -0.5,
+  },
+  addrBubble: {
+    minWidth: 195,
+    maxWidth: 250,
+    minHeight: 78,
+    flexDirection: "row",
+    alignItems: "flex-start",
+    borderRadius: 20,
     padding: 12,
+    marginRight: 12,
+    marginBottom: 2,
+    borderWidth: 1,
+    elevation: 2,
+    shadowRadius: 7,
+    shadowOffset: { width: 0, height: 2 },
+    position: "relative",
   },
-  addr: { fontWeight: "600", fontSize: 15 },
-  addrSmall: { color: "#686868", fontSize: 13 },
+  addr: {
+    fontWeight: "700",
+    fontSize: 15.5,
+    marginBottom: 2,
+  },
+  addrSmall: {
+    fontSize: 13.2,
+  },
+  addrSelectedIcon: {
+    position: "absolute",
+    top: 4,
+    right: -12,
+  },
+  addAddressCard: {
+    borderRadius: 20,
+    borderWidth: 1.2,
+    marginTop: 5,
+    marginHorizontal: 1,
+    shadowOpacity: 0.08,
+    shadowRadius: 7,
+    elevation: 1,
+  },
+  card: {
+    borderRadius: 18,
+    shadowColor: "#282828",
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    elevation: 1,
+    marginBottom: 7,
+  },
+  emptyState: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 8,
+    paddingLeft: 2,
+    opacity: 0.7,
+  },
   cartRow: {
     flexDirection: "row",
     alignItems: "center",
-    marginVertical: 6,
-    borderBottomWidth: 0.7,
-    borderBottomColor: "#ebebeb",
-    paddingBottom: 8,
+    padding: 8,
+    minHeight: 75,
   },
   cartImg: {
-    width: 56,
-    height: 56,
-    borderRadius: 8,
-    backgroundColor: "#ddd",
+    width: 64,
+    height: 64,
+    borderRadius: 12,
+    backgroundColor: "#e9eaee",
+    marginRight: 8,
+    borderWidth: 1,
+    borderColor: "#fafbfc",
   },
-  container: { padding: 18 },
+  cartControlRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 7,
+    marginRight: 9,
+    gap: 6,
+  },
+  stepperBtn: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 0,
+    marginHorizontal: 1,
+  },
+  quantityText: {
+    width: 28,
+    textAlign: "center",
+    fontWeight: "600",
+    fontSize: 15,
+  },
+  deleteBtn: {
+    marginLeft: 6,
+    padding: 4,
+    borderRadius: 13,
+    shadowOpacity: 0.04,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#FFE9E9",
+  },
+  summaryRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginVertical: 2,
+    alignItems: "center",
+  },
+  summaryValue: {
+    fontWeight: "600",
+    fontSize: 15.5,
+  },
+  couponBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginVertical: 7,
+    gap: 5,
+  },
 });
 
 export default CheckoutScreen;
