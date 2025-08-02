@@ -13,6 +13,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+const shopImagePlaceholder = require("@/assets/images/shop.jpg");
 
 interface Shop {
   _id: string;
@@ -62,11 +63,11 @@ export default function ShopsScreen() {
     >
       <View style={styles.logoContainer}>
         <Image
-          source={{
-            uri:
-              item.storeLogoUrl ||
-              "https://upload.wikimedia.org/wikipedia/commons/6/65/No-Image-Placeholder.svg",
-          }}
+          source={
+            item.storeLogoUrl && item.storeLogoUrl.trim() !== ""
+              ? { uri: item.storeLogoUrl }
+              : shopImagePlaceholder
+          }
           style={styles.logo}
         />
       </View>
