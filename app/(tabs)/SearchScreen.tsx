@@ -594,10 +594,10 @@ export default function SearchScreen() {
         </KeyboardAvoidingView>
       </Modal>
 
-      {/* SORT MODAL (unchanged) */}
+      {/* SORT MODAL */}
       <Modal
         visible={sortModalVisible}
-        animationType="slide"
+        animationType="fade" // same as filters modal
         transparent={true}
         onRequestClose={() => setSortModalVisible(false)}
       >
@@ -605,23 +605,28 @@ export default function SearchScreen() {
           style={{
             flex: 1,
             justifyContent: "flex-end",
-            backgroundColor: "rgba(0,0,0,0.13)",
+            backgroundColor: "rgba(0,0,0,0.33)",
           }}
         >
           <View style={styles.bottomSheetCardSort}>
-            <View style={{ alignItems: "center" }}>
-              <View style={styles.bottomSheetDragIndicator} />
-            </View>
-            <Text
+            {/* Header with title and close cross icon */}
+            <View
               style={{
-                fontWeight: "600",
-                fontSize: 17,
-                marginBottom: 12,
-                marginTop: 4,
+                flexDirection: "row",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: 15,
               }}
             >
-              Sort by
-            </Text>
+              <Text style={{ fontWeight: "600", fontSize: 20 }}>Sort</Text>
+              <TouchableOpacity
+                onPress={() => setSortModalVisible(false)}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <Ionicons name="close" size={26} color="#555" />
+              </TouchableOpacity>
+            </View>
+
             {["price:asc", "price:desc", "newest"].map((opt) => (
               <TouchableOpacity
                 key={opt}
@@ -651,12 +656,6 @@ export default function SearchScreen() {
                 </Text>
               </TouchableOpacity>
             ))}
-            <TouchableOpacity
-              style={{ marginTop: 20, alignSelf: "flex-end" }}
-              onPress={() => setSortModalVisible(false)}
-            >
-              <Text style={{ color: "#888" }}>Close</Text>
-            </TouchableOpacity>
           </View>
         </View>
       </Modal>
