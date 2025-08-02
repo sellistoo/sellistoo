@@ -1,48 +1,52 @@
+import api from "@/api"; // Use your api instance here
 import { Colors } from "@/constants/Colors";
-import React from "react";
+import { useColorScheme } from "@/hooks/useColorScheme";
+import React, { useEffect, useState } from "react";
 import {
+  ActivityIndicator,
   FlatList,
   Image,
   StyleSheet,
   Text,
   TouchableOpacity,
-  useColorScheme,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-const dummyShops = [
-  {
-    _id: "shop1",
-    storeName: "Gadget Zone",
-    storeLogoUrl: "https://m.media-amazon.com/images/I/51DdbpI9HoL._SX679_.jpg",
-    storeDescription: "Best deals on electronics, gadgets, and accessories.",
-  },
-  {
-    _id: "shop2",
-    storeName: "Fashion Fiesta",
-    storeLogoUrl: "",
-    storeDescription: "Trendy fashion wear for all seasons and all ages.",
-  },
-  {
-    _id: "shop3",
-    storeName: "Book Hub",
-    storeLogoUrl: "",
-    storeDescription: "Explore bestsellers, classics, and academic books.",
-  },
-  {
-    _id: "shop4",
-    storeName: "Home Essentials",
-    storeLogoUrl: "",
-    storeDescription: "Kitchenware, storage, decor & daily use items.",
-  },
-];
+interface Shop {
+  _id: string;
+  storeName: string;
+  storeLogoUrl?: string;
+  storeDescription: string;
+}
 
 export default function ShopsScreen() {
   const colorScheme = useColorScheme();
   const theme = Colors[colorScheme ?? "light"];
 
-  const renderItem = ({ item }: { item: (typeof dummyShops)[0] }) => (
+  const [shops, setShops] = useState<Shop[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchShops = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        // Assuming your API endpoint for shops is "/sellers/shop"
+        const res = await api.get("/sellers/shop");
+        setShops(res.data || []);
+      } catch (err) {
+        setError("Failed to fetch shops");
+        console.error("Failed to fetch shops", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchShops();
+  }, []);
+
+  const renderItem = ({ item }: { item: Shop }) => (
     <TouchableOpacity
       style={[
         styles.card,
@@ -50,6 +54,7 @@ export default function ShopsScreen() {
       ]}
       onPress={() => {
         console.log("Pressed:", item.storeName);
+        // TODO: Navigate to shop details if navigation implemented
       }}
     >
       <View style={styles.logoContainer}>
@@ -78,14 +83,42 @@ export default function ShopsScreen() {
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }}>
       <View style={{ flex: 1, paddingHorizontal: 16, paddingTop: 16 }}>
         <Text style={[styles.title, { color: theme.text }]}>Explore Shops</Text>
-        <FlatList
-          data={dummyShops}
-          renderItem={renderItem}
-          keyExtractor={(item) => item._id}
-          numColumns={2}
-          columnWrapperStyle={{ justifyContent: "space-between" }}
-          contentContainerStyle={{ paddingBottom: 40 }}
-        />
+
+        {loading && (
+          <ActivityIndicator
+            size="large"
+            color={theme.tint}
+            style={{ marginTop: 20 }}
+          />
+        )}
+
+        {error && (
+          <Text style={{ textAlign: "center", color: "red", marginTop: 20 }}>
+            {error}
+          </Text>
+        )}
+
+        {!loading && !error && (
+          <FlatList
+            data={shops}
+            renderItem={renderItem}
+            keyExtractor={(item) => item._id}
+            numColumns={2}
+            columnWrapperStyle={{ justifyContent: "space-between" }}
+            contentContainerStyle={{ paddingBottom: 40 }}
+            ListEmptyComponent={
+              <Text
+                style={{
+                  textAlign: "center",
+                  marginTop: 20,
+                  color: theme.mutedText,
+                }}
+              >
+                No shops found.
+              </Text>
+            }
+          />
+        )}
       </View>
     </SafeAreaView>
   );
@@ -96,9 +129,6 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: "700",
     marginBottom: 12,
-  },
-  list: {
-    paddingBottom: 40,
   },
   card: {
     width: "48%",
