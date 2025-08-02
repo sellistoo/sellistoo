@@ -2,6 +2,7 @@ import { Colors } from "@/constants/Colors";
 import { useCart } from "@/hooks/useCart";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { Feather } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import React from "react";
 import {
   Alert,
@@ -18,6 +19,8 @@ import {
 export default function CartScreen() {
   const colorScheme = useColorScheme();
   const theme = Colors[colorScheme ?? "light"];
+  const router = useRouter();
+
   const { cartItems, updateQuantity, removeFromCart, clearCart } = useCart();
 
   const handleClearCart = () => {
@@ -158,7 +161,14 @@ export default function CartScreen() {
                 // Navigate to checkout
               }}
             >
-              <Text style={{ color: "#fff", fontWeight: "600" }}>Checkout</Text>
+              <Text
+                style={{ color: "#fff", fontWeight: "600" }}
+                onPress={() => {
+                  router.push("/checkout");
+                }}
+              >
+                Checkout
+              </Text>
             </TouchableOpacity>
           </View>
         </View>
