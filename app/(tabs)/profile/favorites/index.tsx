@@ -1,4 +1,5 @@
 import { Colors } from "@/constants/Colors";
+import { useCart } from "@/hooks/useCart";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { useFavorites } from "@/hooks/useFavorites";
 import { Ionicons } from "@expo/vector-icons";
@@ -16,11 +17,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 export default function FavoriteScreen() {
   const theme = Colors[useColorScheme() ?? "light"];
   const { favoriteProducts, removeFromFavorites } = useFavorites();
-
-  const addToCart = (item: any) => {
-    console.log("Add to cart:", item.name);
-    // implement cart logic
-  };
+  const { addToCart } = useCart();
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }}>
@@ -32,7 +29,7 @@ export default function FavoriteScreen() {
         }
         contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 40 }}
         data={favoriteProducts}
-        keyExtractor={(item, index) => item.id?.toString() || `fav-${index}`} // ✅ Fixed
+        keyExtractor={(item, index) => item._id?.toString() || `fav-${index}`} // ✅ Fixed
         renderItem={({ item }) => (
           <View
             style={[
@@ -43,7 +40,7 @@ export default function FavoriteScreen() {
               },
             ]}
           >
-            <Image source={{ uri: item.image }} style={styles.image} />
+            <Image source={{ uri: item.images?.[0] }} style={styles.image} />
             <View style={styles.info}>
               <Text
                 style={[styles.title, { color: theme.text }]}
@@ -52,11 +49,24 @@ export default function FavoriteScreen() {
                 {item.name}
               </Text>
               <Text style={[styles.price, { color: theme.tint }]}>
-                ₹{item.price}
+                ₹
+                {typeof item.salePrice === "number"
+                  ? item.salePrice
+                  : item.price}
               </Text>
               <View style={styles.actions}>
                 <TouchableOpacity
-                  onPress={() => addToCart(item)}
+                  onPress={() =>
+                    addToCart({
+                      product: item._id || item.id,
+                      name: item.name,
+                      image: item.images?.[0],
+                      price: item.salePrice ?? item.price,
+                      quantity: 1,
+                      sku: item.sku,
+                      variant: item.variant || {},
+                    })
+                  }
                   style={[styles.addButton, { backgroundColor: theme.tint }]}
                 >
                   <Ionicons name="cart-outline" size={18} color="#fff" />
