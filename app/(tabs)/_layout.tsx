@@ -106,6 +106,13 @@ export default function TabLayout() {
           // optionally: headerShown: false, etc.
         }}
       />
+      <Tabs.Screen
+        name="product/[id]" // The dynamic route filename: product/[id].tsx
+        options={{
+          href: null, // Hidden from tab bar, still routable!
+          // Optionally: headerShown: false,
+        }}
+      />
     </Tabs>
   );
 }

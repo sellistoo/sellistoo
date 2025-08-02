@@ -4,7 +4,7 @@ import { useCart } from "@/hooks/useCart";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { useFavorites } from "@/hooks/useFavorites";
 import { Ionicons } from "@expo/vector-icons";
-import { useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -27,6 +27,7 @@ const PAGE_SIZE = 20;
 export default function SearchScreen() {
   const theme = Colors[useColorScheme() ?? "light"];
   const { addToCart } = useCart();
+  const router = useRouter();
   const { isFavorite, addToFavorites, removeFromFavorites } = useFavorites();
 
   const [debouncedQuery, setDebouncedQuery] = useState("");
@@ -193,13 +194,16 @@ export default function SearchScreen() {
   const renderItem = ({ item }: { item: any }) => {
     const isFav = isFavorite(item._id || item.id);
     const price = item.salePrice ?? item.price;
+    const productId = item._id || item.id;
 
     return (
-      <View
+      <TouchableOpacity
         style={[
           styles.card,
           { backgroundColor: theme.cardBg, position: "relative" },
         ]}
+        activeOpacity={0.9}
+        onPress={() => router.push(`/(tabs)/product/${productId}`)}
       >
         <Image source={{ uri: item.images?.[0] }} style={styles.image} />
         <Text style={[styles.name, { color: theme.text }]} numberOfLines={2}>
@@ -211,7 +215,7 @@ export default function SearchScreen() {
             style={[styles.iconButton, { backgroundColor: theme.tint }]}
             onPress={() =>
               addToCart({
-                product: item._id || item.id,
+                product: productId,
                 name: item.name,
                 image: item.images?.[0],
                 price,
@@ -225,9 +229,7 @@ export default function SearchScreen() {
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() =>
-              isFav
-                ? removeFromFavorites(item._id || item.id)
-                : addToFavorites(item._id || item.id)
+              isFav ? removeFromFavorites(productId) : addToFavorites(productId)
             }
             style={[
               styles.iconButton,
@@ -243,7 +245,7 @@ export default function SearchScreen() {
             />
           </TouchableOpacity>
         </View>
-      </View>
+      </TouchableOpacity>
     );
   };
 
