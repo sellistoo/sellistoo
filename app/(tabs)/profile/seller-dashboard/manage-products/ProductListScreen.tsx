@@ -140,54 +140,69 @@ export default function ProductListScreen() {
           <Text style={styles.title}>{item.name}</Text>
           {editing ? (
             <>
-              <TextInput
-                ref={(r) => {
-                  inputRefs.current["description"] = r;
-                }}
-                style={styles.editInput}
-                value={editedFields.description ?? ""}
-                onChangeText={(v) =>
-                  setEditedFields((prev) => ({ ...prev, description: v }))
-                }
-                placeholder="Description"
-              />
-              <View style={styles.editRow}>
+              <View style={{ marginBottom: 6 }}>
+                <Text style={styles.inputLabel}>Description</Text>
                 <TextInput
-                  style={styles.editField}
-                  value={String(editedFields.price ?? "")}
+                  ref={(r) => {
+                    inputRefs.current["description"] = r;
+                  }}
+                  style={styles.editInput}
+                  value={editedFields.description ?? ""}
                   onChangeText={(v) =>
-                    setEditedFields((prev) => ({ ...prev, price: +v }))
+                    setEditedFields((prev) => ({ ...prev, description: v }))
                   }
-                  placeholder="Price"
-                  keyboardType="numeric"
-                />
-                <TextInput
-                  style={styles.editField}
-                  value={String(editedFields.salePrice ?? "")}
-                  onChangeText={(v) =>
-                    setEditedFields((prev) => ({ ...prev, salePrice: +v }))
-                  }
-                  placeholder="Sale Price"
-                  keyboardType="numeric"
-                />
-                <TextInput
-                  style={styles.editField}
-                  value={String(editedFields.quantity ?? "")}
-                  onChangeText={(v) =>
-                    setEditedFields((prev) => ({ ...prev, quantity: +v }))
-                  }
-                  placeholder="Qty"
-                  keyboardType="numeric"
+                  placeholder="Description"
                 />
               </View>
-              <TextInput
-                style={[styles.editInput, { marginTop: 6 }]}
-                value={editedFields.sku}
-                onChangeText={(v) =>
-                  setEditedFields((prev) => ({ ...prev, sku: v }))
-                }
-                placeholder="SKU"
-              />
+              <View style={styles.editRow}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.inputLabel}>Price</Text>
+                  <TextInput
+                    style={styles.editField}
+                    value={String(editedFields.price ?? "")}
+                    onChangeText={(v) =>
+                      setEditedFields((prev) => ({ ...prev, price: +v }))
+                    }
+                    placeholder="Price"
+                    keyboardType="numeric"
+                  />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.inputLabel}>Sale Price</Text>
+                  <TextInput
+                    style={styles.editField}
+                    value={String(editedFields.salePrice ?? "")}
+                    onChangeText={(v) =>
+                      setEditedFields((prev) => ({ ...prev, salePrice: +v }))
+                    }
+                    placeholder="Sale Price"
+                    keyboardType="numeric"
+                  />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.inputLabel}>Qty</Text>
+                  <TextInput
+                    style={styles.editField}
+                    value={String(editedFields.quantity ?? "")}
+                    onChangeText={(v) =>
+                      setEditedFields((prev) => ({ ...prev, quantity: +v }))
+                    }
+                    placeholder="Qty"
+                    keyboardType="numeric"
+                  />
+                </View>
+              </View>
+              <View style={{ marginTop: 6 }}>
+                <Text style={styles.inputLabel}>SKU</Text>
+                <TextInput
+                  style={[styles.editInput, styles.disabledInput]}
+                  value={editedFields.sku}
+                  editable={false}
+                  selectTextOnFocus={false}
+                  pointerEvents="none"
+                  placeholder="SKU"
+                />
+              </View>
               <View style={{ flexDirection: "row", marginTop: 10 }}>
                 <TouchableOpacity
                   style={[styles.actionBtn, { backgroundColor: "#10b981" }]}
@@ -479,5 +494,18 @@ const styles = StyleSheet.create({
     backgroundColor: "transparent",
     paddingBottom: 20,
     alignItems: "center",
+  },
+  inputLabel: {
+    fontSize: 12.7,
+    color: "#4b5563",
+    fontWeight: "500",
+    marginBottom: 2,
+    marginLeft: 2,
+    letterSpacing: 0.07,
+  },
+  disabledInput: {
+    backgroundColor: "#ececec",
+    color: "#aaa",
+    opacity: 0.85,
   },
 });
