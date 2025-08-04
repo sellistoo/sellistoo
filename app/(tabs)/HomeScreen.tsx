@@ -5,8 +5,9 @@ import { useColorScheme } from "@/hooks/useColorScheme";
 import { useUserInfo } from "@/hooks/useUserInfo";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useRouter } from "expo-router";
-import React, { useState } from "react";
+import React, { useCallback, useState } from "react";
 import {
+  ActivityIndicator,
   FlatList,
   Image,
   ScrollView,
@@ -17,6 +18,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+const shopImagePlaceholder = require("@/assets/images/shop.jpg");
 
 // Dummy Data
 const categories = [
@@ -66,6 +68,13 @@ const banners = [
     image: "https://images.unsplash.com/photo-1598515214213-7c603db7ed1e?w=600",
   },
 ];
+interface Shop {
+  _id: string;
+  storeName: string;
+  storeLogoUrl?: string;
+  storeDescription: string;
+}
+
 export default function HomeScreen() {
   const colorScheme = useColorScheme();
   const theme = Colors[colorScheme ?? "light"];
@@ -73,6 +82,11 @@ export default function HomeScreen() {
   const [searchText, setSearchText] = useState("");
   const { userInfo } = useUserInfo();
   const [userAddress, setUserAddress] = useState<string>("");
+  // Shops state & loading/error
+  const [shops, setShops] = useState<Shop[]>([]);
+  const [shopsLoading, setShopsLoading] = useState(false);
+  const [shopsError, setShopsError] = useState<string | null>(null);
+
   useFocusEffect(
     React.useCallback(() => {
       const fetchDefaultAddress = async () => {
@@ -106,6 +120,62 @@ export default function HomeScreen() {
       fetchDefaultAddress();
     }, [userInfo?.id])
   );
+
+  // Shops fetch on mount/focus
+  useFocusEffect(
+    useCallback(() => {
+      const fetchShops = async () => {
+        setShopsLoading(true);
+        setShopsError(null);
+        try {
+          const res = await api.get("/sellers/shop");
+          setShops(res.data || []);
+        } catch (err) {
+          setShopsError("Failed to fetch shops");
+        } finally {
+          setShopsLoading(false);
+        }
+      };
+      fetchShops();
+    }, [])
+  );
+
+  // Render individual shop card (horizontal)
+  const renderShopCard = ({ item }: { item: Shop }) => (
+    <TouchableOpacity
+      style={[
+        styles.shopCard,
+        { backgroundColor: theme.cardBg, borderColor: theme.border },
+      ]}
+      onPress={() =>
+        router.push({
+          pathname: "/shops/[shopId]",
+          params: { shopId: item._id },
+        })
+      }
+    >
+      <View style={styles.logoContainer}>
+        <Image
+          source={
+            item.storeLogoUrl && item.storeLogoUrl.trim() !== ""
+              ? { uri: item.storeLogoUrl }
+              : shopImagePlaceholder
+          }
+          style={styles.logo}
+        />
+      </View>
+      <Text style={[styles.shopName, { color: theme.text }]}>
+        {item.storeName}
+      </Text>
+      <Text
+        style={[styles.shopDescription, { color: theme.mutedText }]}
+        numberOfLines={2}
+      >
+        {item.storeDescription}
+      </Text>
+    </TouchableOpacity>
+  );
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }}>
       {/* HEADER: fixed delivery address & search */}
@@ -199,6 +269,43 @@ export default function HomeScreen() {
             </View>
           )}
         />
+
+        {/* Shops Section */}
+        <View style={styles.sectionHeader}>
+          <Text style={[styles.sectionTitle, { color: theme.text }]}>
+            Shops
+          </Text>
+        </View>
+        {shopsLoading ? (
+          <ActivityIndicator
+            color={theme.tint}
+            style={{ marginVertical: 18 }}
+          />
+        ) : shopsError ? (
+          <Text style={{ textAlign: "center", color: "red", marginBottom: 16 }}>
+            {shopsError}
+          </Text>
+        ) : (
+          <FlatList
+            data={shops}
+            horizontal
+            keyExtractor={(item) => item._id}
+            renderItem={renderShopCard}
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.shopList}
+            ListEmptyComponent={
+              <Text
+                style={{
+                  color: theme.mutedText,
+                  textAlign: "center",
+                  paddingVertical: 18,
+                }}
+              >
+                No shops found.
+              </Text>
+            }
+          />
+        )}
 
         {/* Flash Sale */}
         <View style={styles.sectionHeader}>
@@ -379,5 +486,44 @@ const styles = StyleSheet.create({
   priceRow: {
     flexDirection: "row",
     alignItems: "center",
+  },
+  // --- SHOPS styles ---
+  shopList: {
+    paddingLeft: 16,
+    paddingBottom: 20,
+  },
+  shopCard: {
+    width: 160,
+    marginRight: 15,
+    borderRadius: 12,
+    padding: 10,
+    borderWidth: 1,
+    alignItems: "center",
+    backgroundColor: "#fff",
+  },
+  logoContainer: {
+    height: 80,
+    width: "100%",
+    borderRadius: 8,
+    backgroundColor: "#eee",
+    marginBottom: 7,
+    justifyContent: "center",
+    alignItems: "center",
+    overflow: "hidden",
+  },
+  logo: {
+    width: "100%",
+    height: "100%",
+    resizeMode: "contain",
+  },
+  shopName: {
+    fontSize: 14,
+    fontWeight: "600",
+    textAlign: "center",
+  },
+  shopDescription: {
+    fontSize: 12,
+    textAlign: "center",
+    marginTop: 2,
   },
 });
