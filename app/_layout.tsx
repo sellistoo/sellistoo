@@ -1,6 +1,7 @@
 import { CartProvider } from "@/hooks/useCart";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { FavoritesProvider } from "@/hooks/useFavorites";
+import { FeaturedCategoriesProvider } from "@/hooks/useFeaturedCategories";
 import { UserInfoProvider } from "@/hooks/useUserInfo";
 import {
   DarkTheme,
@@ -28,13 +29,15 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
         <UserInfoProvider>
-          <CartProvider>
-            <FavoritesProvider>
-              <Slot />
-              <StatusBar style="auto" />
-              <Toast />
-            </FavoritesProvider>
-          </CartProvider>
+          <FeaturedCategoriesProvider>
+            <CartProvider>
+              <FavoritesProvider>
+                <Slot />
+                <StatusBar style="auto" />
+                <Toast />
+              </FavoritesProvider>
+            </CartProvider>
+          </FeaturedCategoriesProvider>
         </UserInfoProvider>
       </ThemeProvider>
     </SafeAreaProvider>
