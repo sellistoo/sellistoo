@@ -1,8 +1,10 @@
+import api from "@/api";
 import BannerSlider from "@/components/BannerSlider";
 import { Colors } from "@/constants/Colors";
 import { useColorScheme } from "@/hooks/useColorScheme";
+import { useUserInfo } from "@/hooks/useUserInfo";
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
   FlatList,
@@ -69,32 +71,72 @@ export default function HomeScreen() {
   const theme = Colors[colorScheme ?? "light"];
   const router = useRouter();
   const [searchText, setSearchText] = useState("");
+  const { userInfo } = useUserInfo();
+  const [userAddress, setUserAddress] = useState<string>("");
+  useFocusEffect(
+    React.useCallback(() => {
+      const fetchDefaultAddress = async () => {
+        console.log("inside address");
 
+        if (!userInfo?.id) return;
+        try {
+          // Fetch all addresses
+          const res = await api.get(`/address/${userInfo.id}`);
+          const addresses = res.data || [];
+          // Find default address
+          const defaultAddr = addresses.find((item: any) => item.isDefault);
+          if (defaultAddr) {
+            // Compose a user-friendly string from address fields
+            setUserAddress(
+              `${defaultAddr.building}, ${defaultAddr.street}, ${defaultAddr.city} - ${defaultAddr.zipCode}`
+            );
+          } else if (addresses.length > 0) {
+            // If not marked, fallback to first
+            const adr = addresses[0];
+            setUserAddress(
+              `${adr.building}, ${adr.street}, ${adr.city} - ${adr.zipCode}`
+            );
+          } else {
+            setUserAddress(""); // No address found
+          }
+        } catch {
+          setUserAddress("");
+        }
+      };
+      fetchDefaultAddress();
+    }, [userInfo?.id])
+  );
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }}>
       {/* HEADER: fixed delivery address & search */}
       <View style={[styles.header, { backgroundColor: theme.background }]}>
         {/* Address Bar */}
-        <View
-          style={[
-            styles.addressContainer,
-            { backgroundColor: theme.secondary },
-          ]}
-        >
-          <TouchableOpacity
-            style={[styles.addressLeftIcon, { backgroundColor: theme.accent }]}
+        {userAddress && (
+          <View
+            style={[
+              styles.addressContainer,
+              { backgroundColor: theme.secondary },
+            ]}
           >
-            <Ionicons name="location-outline" size={20} color={theme.text} />
-          </TouchableOpacity>
-          <View style={styles.addressContent}>
-            <Text style={[styles.addressLabel, { color: theme.mutedText }]}>
-              Deliver to
-            </Text>
-            <Text style={[styles.addressValue, { color: theme.text }]}>
-              92 High Street, London
-            </Text>
+            <TouchableOpacity
+              style={[
+                styles.addressLeftIcon,
+                { backgroundColor: theme.accent },
+              ]}
+            >
+              <Ionicons name="location-outline" size={20} color={theme.text} />
+            </TouchableOpacity>
+            <View style={styles.addressContent}>
+              <Text style={[styles.addressLabel, { color: theme.mutedText }]}>
+                Deliver to
+              </Text>
+              <Text style={[styles.addressValue, { color: theme.text }]}>
+                {userAddress || "--"}
+              </Text>
+            </View>
           </View>
-        </View>
+        )}
+
         {/* Search Bar */}
         <View style={styles.searchBarContainer}>
           <View
