@@ -4,10 +4,11 @@ import { useColorScheme } from "@/hooks/useColorScheme";
 import { useFeaturedCategories } from "@/hooks/useFeaturedCategories";
 import { useUserInfo } from "@/hooks/useUserInfo";
 import { Ionicons } from "@expo/vector-icons";
+import { useNavigation } from "@react-navigation/native";
+import * as ImageManipulator from "expo-image-manipulator";
 import * as ImagePicker from "expo-image-picker";
 import React, { useState } from "react";
 import {
-  Alert,
   Image,
   KeyboardAvoidingView,
   Platform,
@@ -18,17 +19,38 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import Toast from "react-native-toast-message";
 
-// DUMMY: Replace with your real categories data fetch
-const CATEGORIES = [
-  { id: "phones", name: "Phones" },
-  { id: "laptops", name: "Laptops" },
-  { id: "audio", name: "Audio" },
-  { id: "other", name: "Other" },
-];
 const UNITS = ["cm", "inch"];
 
-// Field component (global usage, theme-compliant)
+// ---- Image Compression + Upload Helper ----
+async function compressAndUploadImageAsync(localUri, backendBaseUrl) {
+  // 1. Compress
+  const result = await ImageManipulator.manipulateAsync(
+    localUri,
+    [{ resize: { width: 1024 } }],
+    { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG }
+  );
+  const resp = await fetch(result.uri);
+  const blob = await resp.blob();
+  const filename = `product-image/${Date.now()}-product.jpg`;
+
+  // 2. Get signed upload URL from backend
+  const { data } = await api.get("/upload/generateUploadURL", {
+    params: { filename, contentType: "image/jpeg" },
+  });
+
+  // 3. Upload to GCS
+  const uploadRes = await fetch(data.url, {
+    method: "PUT",
+    headers: { "Content-Type": "image/jpeg" },
+    body: blob,
+  });
+  if (!uploadRes.ok) throw new Error("Image upload failed");
+  return data.publicUrl;
+}
+
+// ---- Shared Form Field ----
 function FormField({
   label,
   value,
@@ -39,7 +61,7 @@ function FormField({
   multiline = false,
   style,
   ...props
-}: any) {
+}) {
   const colorScheme = useColorScheme();
   const theme = Colors[colorScheme ?? "light"];
   return (
@@ -70,19 +92,29 @@ function FormField({
   );
 }
 
-// Variant block, mobile-optimized
-function VariantFields({ variant, onChange, onRemove, canRemove }: any) {
+// ---- Variant Block ----
+function VariantFields({ variant, onChange, onRemove, canRemove }) {
   const colorScheme = useColorScheme();
   const theme = Colors[colorScheme ?? "light"];
 
-  const pickVariantImage = async (imgIdx: any) => {
-    const res = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-    });
-    if (!res.canceled && res.assets.length) {
-      const updated = [...(variant.images || [])];
-      updated[imgIdx] = res.assets[0].uri;
-      onChange({ ...variant, images: updated });
+  const pickVariantImage = async (imgIdx) => {
+    try {
+      Toast.show({ type: "info", text1: "Uploading image..." });
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      });
+      if (!result.canceled && result.assets.length) {
+        const publicUrl = await compressAndUploadImageAsync(
+          result.assets[0].uri,
+          process.env.EXPO_PUBLIC_API_BASE_URL
+        );
+        const updated = [...(variant.images || [])];
+        updated[imgIdx] = publicUrl;
+        onChange({ ...variant, images: updated });
+        Toast.show({ type: "success", text1: "Image uploaded" });
+      }
+    } catch (err) {
+      Toast.show({ type: "error", text1: "Image upload failed" });
     }
   };
 
@@ -90,7 +122,7 @@ function VariantFields({ variant, onChange, onRemove, canRemove }: any) {
     <View style={styles.variantBlock}>
       <View style={styles.rowCenterSpace}>
         <Text style={styles.variantTitle}>Variant</Text>
-        {
+        {canRemove && (
           <TouchableOpacity
             onPress={onRemove}
             accessibilityLabel="Remove variant"
@@ -103,31 +135,31 @@ function VariantFields({ variant, onChange, onRemove, canRemove }: any) {
               color={theme.destructive}
             />
           </TouchableOpacity>
-        }
+        )}
       </View>
       <FormField
         label="SKU*"
         value={variant.sku}
-        onChangeText={(v: any) => onChange({ ...variant, sku: v })}
+        onChangeText={(v) => onChange({ ...variant, sku: v })}
         placeholder="SKU"
       />
       <FormField
         label="Size"
         value={variant.size}
-        onChangeText={(v: any) => onChange({ ...variant, size: v })}
+        onChangeText={(v) => onChange({ ...variant, size: v })}
         placeholder="e.g. M, 128GB"
       />
       <FormField
         label="Color"
         value={variant.color}
-        onChangeText={(v: any) => onChange({ ...variant, color: v })}
+        onChangeText={(v) => onChange({ ...variant, color: v })}
         placeholder="e.g. Black"
       />
       <View style={styles.rowFields}>
         <FormField
           label="Price*"
           value={variant.price ? String(variant.price) : ""}
-          onChangeText={(v: any) => onChange({ ...variant, price: Number(v) })}
+          onChangeText={(v) => onChange({ ...variant, price: Number(v) })}
           placeholder="₹"
           keyboardType="numeric"
           style={{ flex: 1, marginRight: 6 }}
@@ -135,9 +167,7 @@ function VariantFields({ variant, onChange, onRemove, canRemove }: any) {
         <FormField
           label="Sale Price"
           value={variant.salePrice ? String(variant.salePrice) : ""}
-          onChangeText={(v: any) =>
-            onChange({ ...variant, salePrice: Number(v) })
-          }
+          onChangeText={(v) => onChange({ ...variant, salePrice: Number(v) })}
           placeholder="₹"
           keyboardType="numeric"
           style={{ flex: 1 }}
@@ -146,7 +176,7 @@ function VariantFields({ variant, onChange, onRemove, canRemove }: any) {
       <FormField
         label="Quantity*"
         value={variant.quantity ? String(variant.quantity) : ""}
-        onChangeText={(v: any) => onChange({ ...variant, quantity: Number(v) })}
+        onChangeText={(v) => onChange({ ...variant, quantity: Number(v) })}
         placeholder="Qty"
         keyboardType="numeric"
       />
@@ -172,11 +202,13 @@ function VariantFields({ variant, onChange, onRemove, canRemove }: any) {
   );
 }
 
+// ---- Main Upload Screen ----
 export default function ProductUploadScreen() {
   const { userInfo } = useUserInfo();
   const colorScheme = useColorScheme();
   const theme = Colors[colorScheme ?? "light"];
   const { featuredCategories, loading: catLoading } = useFeaturedCategories();
+  const navigation = useNavigation();
 
   const [fields, setFields] = useState({
     name: "",
@@ -200,24 +232,35 @@ export default function ProductUploadScreen() {
     unit: UNITS[0],
     images: [null, null, null, null],
   });
-  const [variants, setVariants] = useState<any>([]);
+  const [variants, setVariants] = useState([]);
   const [uploading, setUploading] = useState(false);
 
-  const pickMainImage = async (imgIdx: any) => {
-    const res = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-    });
-    if (!res.canceled && res.assets.length) {
-      const newImgs: any = [...fields.images];
-      newImgs[imgIdx] = res.assets[0].uri;
-      setFields((prev) => ({ ...prev, images: newImgs }));
+  // Main Image Upload (now uses cloud upload and stores URL, not file uri)
+  const pickMainImage = async (imgIdx) => {
+    try {
+      Toast.show({ type: "info", text1: "Uploading image..." });
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      });
+      if (!result.canceled && result.assets.length) {
+        const publicUrl = await compressAndUploadImageAsync(
+          result.assets[0].uri,
+          process.env.EXPO_PUBLIC_API_BASE_URL
+        );
+        const newImgs = [...fields.images];
+        newImgs[imgIdx] = publicUrl;
+        setFields((prev) => ({ ...prev, images: newImgs }));
+        Toast.show({ type: "success", text1: "Image uploaded" });
+      }
+    } catch (err) {
+      Toast.show({ type: "error", text1: "Image upload failed" });
     }
   };
 
-  // Variants management
-  const updateVariant = (idx: any, updated: any) => {
-    setVariants((prev: any) => {
-      const copy: any = [...prev];
+  // Variants logic
+  const updateVariant = (idx, updated) => {
+    setVariants((prev) => {
+      const copy = [...prev];
       copy[idx] = updated;
       return copy;
     });
@@ -235,10 +278,10 @@ export default function ProductUploadScreen() {
         images: [null, null, null, null],
       },
     ]);
-  const removeVariant = (idx: any) =>
-    setVariants(variants.filter((_: any, i: any) => i !== idx));
+  const removeVariant = (idx) =>
+    setVariants(variants.filter((_, i) => i !== idx));
 
-  // Validate all fields including variants
+  // Validate before save
   const validate = () => {
     if (!fields.name.trim()) return "Product name required";
     if (!fields.categoryId) return "Select a category";
@@ -255,15 +298,19 @@ export default function ProductUploadScreen() {
       if (!v.sku) return "Each variant needs its own SKU";
       if (!v.price) return "Each variant needs price";
       if (!v.quantity) return "Each variant needs quantity";
+      if (!v.images || v.images.every((img) => !img))
+        return "Each variant needs at least 1 image";
     }
     return "";
   };
 
-  // Handle product upload
+  // Final Upload
   const onUpload = async () => {
     const errorMsg = validate();
-    if (errorMsg) return Alert.alert("Error", errorMsg);
-
+    if (errorMsg) {
+      Toast.show({ type: "error", text1: errorMsg });
+      return;
+    }
     setUploading(true);
     const payload = {
       name: fields.name,
@@ -291,7 +338,7 @@ export default function ProductUploadScreen() {
       },
       images: fields.images.filter(Boolean),
       sellerId: userInfo?.id,
-      variants: variants.map((v: any) => ({
+      variants: variants.map((v) => ({
         sku: v.sku,
         size: v.size,
         color: v.color,
@@ -301,69 +348,47 @@ export default function ProductUploadScreen() {
         images: v.images.filter(Boolean),
       })),
     };
-
     try {
       await api.post("/product", payload);
-      Alert.alert("Success", "Product uploaded!");
-      setFields({
-        name: "",
-        description: "",
-        categoryId: "",
-        brand: "",
-        isReturnable: false,
-        returnWindow: "",
-        price: "",
-        salePrice: "",
-        quantity: "",
-        sku: "",
-        gstPercentage: "",
-        hsnCode: "",
-        shippingWeight: "",
-        isFreeShipping: true,
-        fixedShippingCost: "",
-        length: "",
-        width: "",
-        height: "",
-        unit: UNITS[0],
-        images: [null, null, null, null],
-      });
-      setVariants([]);
+      Toast.show({ type: "success", text1: "Product uploaded!" });
+      navigation.navigate("ProductListScreen"); // update with correct route as per your tab navigator
+      // Optionally, reset fields here...
     } catch {
-      Alert.alert("Error", "Could not upload product.");
+      Toast.show({ type: "error", text1: "Could not upload product." });
     } finally {
       setUploading(false);
     }
   };
 
+  // ---------------- UI -----------------
   return (
     <KeyboardAvoidingView
       style={{ flex: 1, backgroundColor: theme.background }}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
-      keyboardVerticalOffset={Platform.OS === "ios" ? 100 : 0} // Try 90–120 for iOS; 0 for Android
+      keyboardVerticalOffset={Platform.OS === "ios" ? 100 : 0}
     >
       <ScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={{ padding: 20, paddingBottom: 200 }} // Add plenty of bottom padding (e.g. 200)
+        contentContainerStyle={{ padding: 20, paddingBottom: 200 }}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
         <Text style={[styles.header, { color: theme.text }]}>
           Upload New Product
         </Text>
-
-        {/* --- Basic Section --- */}
+        {/* ----- Basic Section ----- */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Basic Information</Text>
           <FormField
             label="Product Name*"
             value={fields.name}
-            onChangeText={(v: any) => setFields((f) => ({ ...f, name: v }))}
+            onChangeText={(v) => setFields((f) => ({ ...f, name: v }))}
             placeholder="Name"
           />
           <FormField
             label="Brand"
             value={fields.brand}
-            onChangeText={(v: any) => setFields((f) => ({ ...f, brand: v }))}
+            onChangeText={(v) => setFields((f) => ({ ...f, brand: v }))}
             placeholder="Brand"
           />
           <Text style={styles.label}>Category*</Text>
@@ -396,13 +421,10 @@ export default function ProductUploadScreen() {
               ))
             )}
           </View>
-
           <FormField
             label="Description*"
             value={fields.description}
-            onChangeText={(v: any) =>
-              setFields((f) => ({ ...f, description: v }))
-            }
+            onChangeText={(v) => setFields((f) => ({ ...f, description: v }))}
             placeholder="Description"
             multiline
           />
@@ -435,7 +457,7 @@ export default function ProductUploadScreen() {
           <FormField
             label="Return Window (days)"
             value={fields.returnWindow}
-            onChangeText={(v: any) =>
+            onChangeText={(v) =>
               setFields((f) => ({
                 ...f,
                 returnWindow: v.replace(/[^0-9]/g, ""),
@@ -447,13 +469,13 @@ export default function ProductUploadScreen() {
           />
         </View>
 
-        {/* --- Pricing --- */}
+        {/* ----- Pricing ----- */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Pricing & Inventory</Text>
           <FormField
             label="Price*"
             value={fields.price}
-            onChangeText={(v: any) =>
+            onChangeText={(v) =>
               setFields((f) => ({ ...f, price: v.replace(/[^0-9.]/g, "") }))
             }
             keyboardType="numeric"
@@ -462,7 +484,7 @@ export default function ProductUploadScreen() {
           <FormField
             label="Sale Price"
             value={fields.salePrice}
-            onChangeText={(v: any) =>
+            onChangeText={(v) =>
               setFields((f) => ({ ...f, salePrice: v.replace(/[^0-9.]/g, "") }))
             }
             keyboardType="numeric"
@@ -471,7 +493,7 @@ export default function ProductUploadScreen() {
           <FormField
             label="Quantity*"
             value={fields.quantity}
-            onChangeText={(v: any) =>
+            onChangeText={(v) =>
               setFields((f) => ({ ...f, quantity: v.replace(/[^0-9]/g, "") }))
             }
             keyboardType="numeric"
@@ -480,18 +502,18 @@ export default function ProductUploadScreen() {
           <FormField
             label="SKU*"
             value={fields.sku}
-            onChangeText={(v: any) => setFields((f) => ({ ...f, sku: v }))}
+            onChangeText={(v) => setFields((f) => ({ ...f, sku: v }))}
             placeholder="Unique SKU"
           />
         </View>
 
-        {/* --- Tax --- */}
+        {/* ----- Tax ----- */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Tax Information</Text>
           <FormField
             label="GST Percentage*"
             value={fields.gstPercentage}
-            onChangeText={(v: any) =>
+            onChangeText={(v) =>
               setFields((f) => ({
                 ...f,
                 gstPercentage: v.replace(/[^0-9]/g, ""),
@@ -503,18 +525,18 @@ export default function ProductUploadScreen() {
           <FormField
             label="HSN Code"
             value={fields.hsnCode}
-            onChangeText={(v: any) => setFields((f) => ({ ...f, hsnCode: v }))}
+            onChangeText={(v) => setFields((f) => ({ ...f, hsnCode: v }))}
             placeholder="Optional"
           />
         </View>
 
-        {/* --- Shipping --- */}
+        {/* ----- Shipping ----- */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Shipping Info</Text>
           <FormField
             label="Shipping Weight (grams)*"
             value={fields.shippingWeight}
-            onChangeText={(v: any) =>
+            onChangeText={(v) =>
               setFields((f) => ({
                 ...f,
                 shippingWeight: v.replace(/[^0-9]/g, ""),
@@ -527,11 +549,8 @@ export default function ProductUploadScreen() {
             <FormField
               label="Length"
               value={fields.length}
-              onChangeText={(v: any) =>
-                setFields((f) => ({
-                  ...f,
-                  length: v.replace(/[^0-9.]/g, ""),
-                }))
+              onChangeText={(v) =>
+                setFields((f) => ({ ...f, length: v.replace(/[^0-9.]/g, "") }))
               }
               keyboardType="numeric"
               placeholder="Length"
@@ -540,11 +559,8 @@ export default function ProductUploadScreen() {
             <FormField
               label="Width"
               value={fields.width}
-              onChangeText={(v: any) =>
-                setFields((f) => ({
-                  ...f,
-                  width: v.replace(/[^0-9.]/g, ""),
-                }))
+              onChangeText={(v) =>
+                setFields((f) => ({ ...f, width: v.replace(/[^0-9.]/g, "") }))
               }
               keyboardType="numeric"
               placeholder="Width"
@@ -553,11 +569,8 @@ export default function ProductUploadScreen() {
             <FormField
               label="Height"
               value={fields.height}
-              onChangeText={(v: any) =>
-                setFields((f) => ({
-                  ...f,
-                  height: v.replace(/[^0-9.]/g, ""),
-                }))
+              onChangeText={(v) =>
+                setFields((f) => ({ ...f, height: v.replace(/[^0-9.]/g, "") }))
               }
               keyboardType="numeric"
               placeholder="Height"
@@ -616,7 +629,7 @@ export default function ProductUploadScreen() {
           <FormField
             label="Fixed Shipping Cost (₹)"
             value={fields.fixedShippingCost}
-            onChangeText={(v: any) =>
+            onChangeText={(v) =>
               setFields((f) => ({
                 ...f,
                 fixedShippingCost: v.replace(/[^0-9.]/g, ""),
@@ -628,7 +641,7 @@ export default function ProductUploadScreen() {
           />
         </View>
 
-        {/* --- Product Images --- */}
+        {/* ----- Product Images ----- */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Product Images</Text>
           <View style={styles.imagesRow}>
@@ -651,7 +664,7 @@ export default function ProductUploadScreen() {
           </View>
         </View>
 
-        {/* --- Variants --- */}
+        {/* ----- Variants ----- */}
         <View style={styles.section}>
           <View
             style={{
@@ -665,11 +678,11 @@ export default function ProductUploadScreen() {
               <Text style={styles.addVariantTxt}>+ Add Variant</Text>
             </TouchableOpacity>
           </View>
-          {variants.map((v: any, idx: any) => (
+          {variants.map((v, idx) => (
             <VariantFields
               key={idx}
               variant={v}
-              onChange={(updated: any) => updateVariant(idx, updated)}
+              onChange={(updated) => updateVariant(idx, updated)}
               onRemove={() => removeVariant(idx)}
               canRemove={variants.length > 1}
             />
@@ -711,11 +724,7 @@ const styles = StyleSheet.create({
     marginBottom: 7,
     letterSpacing: 0.1,
   },
-  label: {
-    fontSize: 13.4,
-    fontWeight: "600",
-    marginBottom: 4,
-  },
+  label: { fontSize: 13.4, fontWeight: "600", marginBottom: 4 },
   input: {
     fontSize: 15,
     borderWidth: 1,
@@ -723,11 +732,7 @@ const styles = StyleSheet.create({
     padding: 12,
     marginBottom: 4,
   },
-  disabledInput: {
-    backgroundColor: "#ececec",
-    color: "#aaa",
-    opacity: 0.8,
-  },
+  disabledInput: { backgroundColor: "#ececec", color: "#aaa", opacity: 0.8 },
   pickerRow: {
     flexDirection: "row",
     marginBottom: 13,
@@ -741,17 +746,9 @@ const styles = StyleSheet.create({
     paddingVertical: 7,
     marginRight: 5,
   },
-  catBtnActive: {
-    backgroundColor: "#6d28d9",
-  },
-  catBtnLabel: {
-    color: "#6d28d9",
-    fontWeight: "600",
-    fontSize: 13.7,
-  },
-  catBtnLabelActive: {
-    color: "#fff",
-  },
+  catBtnActive: { backgroundColor: "#6d28d9" },
+  catBtnLabel: { color: "#6d28d9", fontWeight: "600", fontSize: 13.7 },
+  catBtnLabelActive: { color: "#fff" },
   rowFields: { flexDirection: "row", gap: 10 },
   imagesRow: { flexDirection: "row", gap: 11, marginBottom: 8 },
   imageUpload: {
@@ -766,7 +763,6 @@ const styles = StyleSheet.create({
   },
   uploadText: { fontSize: 30, color: "#b8b8eb" },
   imageThumb: { width: "100%", height: "100%", borderRadius: 7 },
-  // Variants styles
   variantBlock: {
     padding: 10,
     backgroundColor: "#fafafe",
@@ -800,9 +796,5 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   uploadBtnLabel: { color: "#fff", fontWeight: "bold", fontSize: 16 },
-  variantRemoveBtn: {
-    padding: 4,
-    marginLeft: 8,
-    alignSelf: "center",
-  },
+  variantRemoveBtn: { padding: 4, marginLeft: 8, alignSelf: "center" },
 });
