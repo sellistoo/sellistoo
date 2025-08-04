@@ -3,7 +3,6 @@ import { useUserInfo } from "@/hooks/useUserInfo";
 import React, { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   FlatList,
   Image,
   KeyboardAvoidingView,
@@ -14,6 +13,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import Toast from "react-native-toast-message";
 
 interface Product {
   id: string;
@@ -25,7 +25,6 @@ interface Product {
   sku: string;
   images: string[];
 }
-
 const itemsPerPage = 6;
 
 export default function ProductListScreen() {
@@ -38,6 +37,7 @@ export default function ProductListScreen() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editedFields, setEditedFields] = useState<Partial<Product>>({});
   const [refreshing, setRefreshing] = useState(false);
+  const [version, setVersion] = useState(0);
   const inputRefs = useRef<{ [key: string]: TextInput | null }>({});
 
   // Fetch products with pagination and search
@@ -58,7 +58,11 @@ export default function ProductListScreen() {
       setProducts(res.data.data || []);
       setTotal(res.data.total.value || 0);
     } catch (error) {
-      Alert.alert("Error", "Failed to load products.");
+      Toast.show({
+        type: "error",
+        text1: "Error",
+        text2: "Failed to load products.",
+      });
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -85,7 +89,6 @@ export default function ProductListScreen() {
       quantity: p.quantity,
       sku: p.sku,
     });
-    // Focus first input after setState
     setTimeout(() => {
       inputRefs.current["description"]?.focus();
     }, 120);
@@ -94,42 +97,90 @@ export default function ProductListScreen() {
   const handleSave = async (id: string) => {
     try {
       await api.put(`/product/${id}`, editedFields);
+
+      // Immediate UI update: clone and update the item in all cases
+      setProducts((prev) =>
+        prev.map((p) =>
+          p.id === id
+            ? {
+                ...p,
+                ...editedFields,
+                // always force price fields to numbers, even if empty or zero
+                price: Number(editedFields.price ?? p.price),
+                salePrice:
+                  editedFields.salePrice !== undefined
+                    ? Number(editedFields.salePrice)
+                    : p.salePrice,
+                quantity: Number(editedFields.quantity ?? p.quantity),
+                name: editedFields.name ?? p.name,
+                description: editedFields.description ?? p.description,
+                sku: p.sku, // do not allow manual update
+              }
+            : p
+        )
+      );
+
       setEditingId(null);
       setEditedFields({});
-      fetchProducts();
-      Alert.alert("Success", "Product updated successfully");
+
+      Toast.show({
+        type: "success",
+        text1: "Success",
+        text2: "Product updated successfully",
+      });
+
+      // Background refresh (but add a slight delay to let backend actually update the record)
+      setTimeout(() => {
+        fetchProducts();
+      }, 800);
     } catch (e) {
-      Alert.alert("Update Failed", "Could not update product.");
+      Toast.show({
+        type: "error",
+        text1: "Update Failed",
+        text2: "Could not update product.",
+      });
     }
   };
 
   const handleDelete = (id: string) => {
-    Alert.alert(
-      "Delete product?",
-      "Are you sure you want to delete this product?",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Delete",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              await api.delete(`/product/${id}`);
-              fetchProducts();
-              Alert.alert("Deleted", "Product deleted successfully");
-            } catch (e) {
-              Alert.alert("Error", "Unable to delete product.");
-            }
-          },
-        },
-      ]
-    );
+    Toast.show({
+      type: "info",
+      text1: "Deleting...",
+      text2: "Deleting product, please wait.",
+    });
+    setTimeout(async () => {
+      try {
+        await api.delete(`/product/${id}`);
+        await fetchProducts();
+        setVersion((v) => v + 1); // ensure UI refresh after deletion
+        Toast.show({
+          type: "success",
+          text1: "Deleted",
+          text2: "Product deleted successfully",
+        });
+      } catch (e) {
+        Toast.show({
+          type: "error",
+          text1: "Error",
+          text2: "Unable to delete product.",
+        });
+      }
+    }, 600);
   };
 
   const totalPages = Math.max(1, Math.ceil(total / itemsPerPage));
 
   const renderProduct = ({ item }: { item: Product }) => {
     const editing = editingId === item.id;
+    const hasSale =
+      item.salePrice != null &&
+      item.salePrice !== 0 &&
+      item.salePrice !== item.price;
+    const mainPrice =
+      item.salePrice != null && item.salePrice !== 0
+        ? item.salePrice
+        : item.price;
+
     return (
       <View style={styles.itemContainer}>
         <Image
@@ -228,11 +279,11 @@ export default function ProductListScreen() {
               <Text style={styles.text} numberOfLines={2}>
                 {item.description}
               </Text>
-              <View style={[styles.priceRow]}>
-                <Text style={styles.priceText}>₹{item.price}</Text>
-                {item.salePrice ? (
-                  <Text style={styles.salePriceText}>₹{item.salePrice}</Text>
-                ) : null}
+              <View style={styles.priceRow}>
+                <Text style={styles.priceText}>₹{mainPrice}</Text>
+                {hasSale && (
+                  <Text style={styles.salePriceText}>₹{item.price}</Text>
+                )}
                 <Text style={styles.qtyText}>Qty: {item.quantity}</Text>
               </View>
               <Text style={styles.text}>SKU: {item.sku}</Text>
@@ -261,12 +312,10 @@ export default function ProductListScreen() {
     <KeyboardAvoidingView
       style={{ flex: 1 }}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
-      keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0} // Adjust height as needed for your app!
+      keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
     >
       <View style={styles.container}>
         <Text style={styles.header}>Your Products</Text>
-
-        {/* Search Bar */}
         <TextInput
           placeholder="Search by title, SKU or description..."
           style={styles.searchInput}
@@ -277,7 +326,6 @@ export default function ProductListScreen() {
           }}
           autoCorrect={false}
         />
-
         {loading && products.length === 0 ? (
           <ActivityIndicator
             size="large"
@@ -286,6 +334,7 @@ export default function ProductListScreen() {
           />
         ) : (
           <FlatList
+            key={version}
             data={products}
             keyExtractor={(item) => item.id}
             renderItem={renderProduct}
@@ -327,7 +376,7 @@ export default function ProductListScreen() {
                 </View>
               </View>
             }
-            contentContainerStyle={{ paddingBottom: 110 }} // 110+ for tab bar and keyboard avoid
+            contentContainerStyle={{ paddingBottom: 110 }}
             keyboardShouldPersistTaps="handled"
           />
         )}
@@ -337,11 +386,7 @@ export default function ProductListScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#f6f7fb",
-    padding: 16,
-  },
+  container: { flex: 1, backgroundColor: "#f6f7fb", padding: 16 },
   header: {
     fontSize: 22,
     fontWeight: "700",
@@ -378,10 +423,7 @@ const styles = StyleSheet.create({
     marginRight: 13,
     backgroundColor: "#ececec",
   },
-  infoContainer: {
-    flex: 1,
-    justifyContent: "center",
-  },
+  infoContainer: { flex: 1, justifyContent: "center" },
   title: {
     fontWeight: "bold",
     fontSize: 17,
@@ -407,16 +449,8 @@ const styles = StyleSheet.create({
     marginRight: 7,
     fontSize: 13.4,
   },
-  qtyText: {
-    marginLeft: 0,
-    fontSize: 13.9,
-    color: "#22223b",
-  },
-  text: {
-    fontSize: 14.2,
-    color: "#22223b",
-    marginBottom: 2,
-  },
+  qtyText: { marginLeft: 0, fontSize: 13.9, color: "#22223b" },
+  text: { fontSize: 14.2, color: "#22223b", marginBottom: 2 },
   editInput: {
     backgroundColor: "#f5f5fd",
     borderRadius: 9,
@@ -427,11 +461,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#22223b",
   },
-  editRow: {
-    flexDirection: "row",
-    gap: 7,
-    marginVertical: 2,
-  },
+  editRow: { flexDirection: "row", gap: 7, marginVertical: 2 },
   editField: {
     flex: 1,
     borderWidth: 1,
@@ -449,11 +479,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginRight: 5,
   },
-  actionBtnLabel: {
-    color: "#fff",
-    fontWeight: "bold",
-    fontSize: 14.7,
-  },
+  actionBtnLabel: { color: "#fff", fontWeight: "bold", fontSize: 14.7 },
   pagination: {
     flexDirection: "row",
     justifyContent: "center",
@@ -470,19 +496,9 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     marginHorizontal: 4,
   },
-  pageBtnDisabled: {
-    backgroundColor: "#c7d1f7",
-  },
-  pageBtnLabel: {
-    color: "#fff",
-    fontWeight: "700",
-    fontSize: 14,
-  },
-  pageText: {
-    fontSize: 15.1,
-    color: "#22223b",
-    fontWeight: "500",
-  },
+  pageBtnDisabled: { backgroundColor: "#c7d1f7" },
+  pageBtnLabel: { color: "#fff", fontWeight: "700", fontSize: 14 },
+  pageText: { fontSize: 15.1, color: "#22223b", fontWeight: "500" },
   empty: {
     marginTop: 42,
     color: "#555",
@@ -503,9 +519,5 @@ const styles = StyleSheet.create({
     marginLeft: 2,
     letterSpacing: 0.07,
   },
-  disabledInput: {
-    backgroundColor: "#ececec",
-    color: "#aaa",
-    opacity: 0.85,
-  },
+  disabledInput: { backgroundColor: "#ececec", color: "#aaa", opacity: 0.85 },
 });

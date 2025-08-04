@@ -4,9 +4,10 @@ import { useColorScheme } from "@/hooks/useColorScheme";
 import { useFeaturedCategories } from "@/hooks/useFeaturedCategories";
 import { useUserInfo } from "@/hooks/useUserInfo";
 import { Ionicons } from "@expo/vector-icons";
-import { useNavigation } from "@react-navigation/native";
+// import { useNavigation } from "@react-navigation/native";
 import * as ImageManipulator from "expo-image-manipulator";
 import * as ImagePicker from "expo-image-picker";
+import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
   Image,
@@ -24,7 +25,7 @@ import Toast from "react-native-toast-message";
 const UNITS = ["cm", "inch"];
 
 // ---- Image Compression + Upload Helper ----
-async function compressAndUploadImageAsync(localUri, backendBaseUrl) {
+async function compressAndUploadImageAsync(localUri: any, backendBaseUrl: any) {
   // 1. Compress
   const result = await ImageManipulator.manipulateAsync(
     localUri,
@@ -61,7 +62,7 @@ function FormField({
   multiline = false,
   style,
   ...props
-}) {
+}: any) {
   const colorScheme = useColorScheme();
   const theme = Colors[colorScheme ?? "light"];
   return (
@@ -93,11 +94,11 @@ function FormField({
 }
 
 // ---- Variant Block ----
-function VariantFields({ variant, onChange, onRemove, canRemove }) {
+function VariantFields({ variant, onChange, onRemove, canRemove }: any) {
   const colorScheme = useColorScheme();
   const theme = Colors[colorScheme ?? "light"];
 
-  const pickVariantImage = async (imgIdx) => {
+  const pickVariantImage = async (imgIdx: any) => {
     try {
       Toast.show({ type: "info", text1: "Uploading image..." });
       const result = await ImagePicker.launchImageLibraryAsync({
@@ -140,26 +141,26 @@ function VariantFields({ variant, onChange, onRemove, canRemove }) {
       <FormField
         label="SKU*"
         value={variant.sku}
-        onChangeText={(v) => onChange({ ...variant, sku: v })}
+        onChangeText={(v: any) => onChange({ ...variant, sku: v })}
         placeholder="SKU"
       />
       <FormField
         label="Size"
         value={variant.size}
-        onChangeText={(v) => onChange({ ...variant, size: v })}
+        onChangeText={(v: any) => onChange({ ...variant, size: v })}
         placeholder="e.g. M, 128GB"
       />
       <FormField
         label="Color"
         value={variant.color}
-        onChangeText={(v) => onChange({ ...variant, color: v })}
+        onChangeText={(v: any) => onChange({ ...variant, color: v })}
         placeholder="e.g. Black"
       />
       <View style={styles.rowFields}>
         <FormField
           label="Price*"
           value={variant.price ? String(variant.price) : ""}
-          onChangeText={(v) => onChange({ ...variant, price: Number(v) })}
+          onChangeText={(v: any) => onChange({ ...variant, price: Number(v) })}
           placeholder="₹"
           keyboardType="numeric"
           style={{ flex: 1, marginRight: 6 }}
@@ -167,7 +168,9 @@ function VariantFields({ variant, onChange, onRemove, canRemove }) {
         <FormField
           label="Sale Price"
           value={variant.salePrice ? String(variant.salePrice) : ""}
-          onChangeText={(v) => onChange({ ...variant, salePrice: Number(v) })}
+          onChangeText={(v: any) =>
+            onChange({ ...variant, salePrice: Number(v) })
+          }
           placeholder="₹"
           keyboardType="numeric"
           style={{ flex: 1 }}
@@ -176,7 +179,7 @@ function VariantFields({ variant, onChange, onRemove, canRemove }) {
       <FormField
         label="Quantity*"
         value={variant.quantity ? String(variant.quantity) : ""}
-        onChangeText={(v) => onChange({ ...variant, quantity: Number(v) })}
+        onChangeText={(v: any) => onChange({ ...variant, quantity: Number(v) })}
         placeholder="Qty"
         keyboardType="numeric"
       />
@@ -208,7 +211,8 @@ export default function ProductUploadScreen() {
   const colorScheme = useColorScheme();
   const theme = Colors[colorScheme ?? "light"];
   const { featuredCategories, loading: catLoading } = useFeaturedCategories();
-  const navigation = useNavigation();
+  // const navigation = useNavigation();
+  const router = useRouter();
 
   const [fields, setFields] = useState({
     name: "",
@@ -232,11 +236,11 @@ export default function ProductUploadScreen() {
     unit: UNITS[0],
     images: [null, null, null, null],
   });
-  const [variants, setVariants] = useState([]);
+  const [variants, setVariants] = useState<any>([]);
   const [uploading, setUploading] = useState(false);
 
   // Main Image Upload (now uses cloud upload and stores URL, not file uri)
-  const pickMainImage = async (imgIdx) => {
+  const pickMainImage = async (imgIdx: any) => {
     try {
       Toast.show({ type: "info", text1: "Uploading image..." });
       const result = await ImagePicker.launchImageLibraryAsync({
@@ -258,9 +262,9 @@ export default function ProductUploadScreen() {
   };
 
   // Variants logic
-  const updateVariant = (idx, updated) => {
-    setVariants((prev) => {
-      const copy = [...prev];
+  const updateVariant = (idx: any, updated: any) => {
+    setVariants((prev: any) => {
+      const copy: any = [...prev];
       copy[idx] = updated;
       return copy;
     });
@@ -277,9 +281,9 @@ export default function ProductUploadScreen() {
         quantity: "",
         images: [null, null, null, null],
       },
-    ]);
-  const removeVariant = (idx) =>
-    setVariants(variants.filter((_, i) => i !== idx));
+    ] as any);
+  const removeVariant = (idx: any) =>
+    setVariants(variants.filter((_: any, i: any) => i !== idx));
 
   // Validate before save
   const validate = () => {
@@ -298,7 +302,7 @@ export default function ProductUploadScreen() {
       if (!v.sku) return "Each variant needs its own SKU";
       if (!v.price) return "Each variant needs price";
       if (!v.quantity) return "Each variant needs quantity";
-      if (!v.images || v.images.every((img) => !img))
+      if (!v.images || v.images.every((img: any) => !img))
         return "Each variant needs at least 1 image";
     }
     return "";
@@ -338,7 +342,7 @@ export default function ProductUploadScreen() {
       },
       images: fields.images.filter(Boolean),
       sellerId: userInfo?.id,
-      variants: variants.map((v) => ({
+      variants: variants.map((v: any) => ({
         sku: v.sku,
         size: v.size,
         color: v.color,
@@ -351,7 +355,7 @@ export default function ProductUploadScreen() {
     try {
       await api.post("/product", payload);
       Toast.show({ type: "success", text1: "Product uploaded!" });
-      navigation.navigate("ProductListScreen"); // update with correct route as per your tab navigator
+      router.push("./ProductListScreen");
       // Optionally, reset fields here...
     } catch {
       Toast.show({ type: "error", text1: "Could not upload product." });
@@ -382,13 +386,13 @@ export default function ProductUploadScreen() {
           <FormField
             label="Product Name*"
             value={fields.name}
-            onChangeText={(v) => setFields((f) => ({ ...f, name: v }))}
+            onChangeText={(v: any) => setFields((f) => ({ ...f, name: v }))}
             placeholder="Name"
           />
           <FormField
             label="Brand"
             value={fields.brand}
-            onChangeText={(v) => setFields((f) => ({ ...f, brand: v }))}
+            onChangeText={(v: any) => setFields((f) => ({ ...f, brand: v }))}
             placeholder="Brand"
           />
           <Text style={styles.label}>Category*</Text>
@@ -424,7 +428,9 @@ export default function ProductUploadScreen() {
           <FormField
             label="Description*"
             value={fields.description}
-            onChangeText={(v) => setFields((f) => ({ ...f, description: v }))}
+            onChangeText={(v: any) =>
+              setFields((f) => ({ ...f, description: v }))
+            }
             placeholder="Description"
             multiline
           />
@@ -457,7 +463,7 @@ export default function ProductUploadScreen() {
           <FormField
             label="Return Window (days)"
             value={fields.returnWindow}
-            onChangeText={(v) =>
+            onChangeText={(v: any) =>
               setFields((f) => ({
                 ...f,
                 returnWindow: v.replace(/[^0-9]/g, ""),
@@ -475,7 +481,7 @@ export default function ProductUploadScreen() {
           <FormField
             label="Price*"
             value={fields.price}
-            onChangeText={(v) =>
+            onChangeText={(v: any) =>
               setFields((f) => ({ ...f, price: v.replace(/[^0-9.]/g, "") }))
             }
             keyboardType="numeric"
@@ -484,7 +490,7 @@ export default function ProductUploadScreen() {
           <FormField
             label="Sale Price"
             value={fields.salePrice}
-            onChangeText={(v) =>
+            onChangeText={(v: any) =>
               setFields((f) => ({ ...f, salePrice: v.replace(/[^0-9.]/g, "") }))
             }
             keyboardType="numeric"
@@ -493,7 +499,7 @@ export default function ProductUploadScreen() {
           <FormField
             label="Quantity*"
             value={fields.quantity}
-            onChangeText={(v) =>
+            onChangeText={(v: any) =>
               setFields((f) => ({ ...f, quantity: v.replace(/[^0-9]/g, "") }))
             }
             keyboardType="numeric"
@@ -502,7 +508,7 @@ export default function ProductUploadScreen() {
           <FormField
             label="SKU*"
             value={fields.sku}
-            onChangeText={(v) => setFields((f) => ({ ...f, sku: v }))}
+            onChangeText={(v: any) => setFields((f) => ({ ...f, sku: v }))}
             placeholder="Unique SKU"
           />
         </View>
@@ -513,7 +519,7 @@ export default function ProductUploadScreen() {
           <FormField
             label="GST Percentage*"
             value={fields.gstPercentage}
-            onChangeText={(v) =>
+            onChangeText={(v: any) =>
               setFields((f) => ({
                 ...f,
                 gstPercentage: v.replace(/[^0-9]/g, ""),
@@ -525,7 +531,7 @@ export default function ProductUploadScreen() {
           <FormField
             label="HSN Code"
             value={fields.hsnCode}
-            onChangeText={(v) => setFields((f) => ({ ...f, hsnCode: v }))}
+            onChangeText={(v: any) => setFields((f) => ({ ...f, hsnCode: v }))}
             placeholder="Optional"
           />
         </View>
@@ -536,7 +542,7 @@ export default function ProductUploadScreen() {
           <FormField
             label="Shipping Weight (grams)*"
             value={fields.shippingWeight}
-            onChangeText={(v) =>
+            onChangeText={(v: any) =>
               setFields((f) => ({
                 ...f,
                 shippingWeight: v.replace(/[^0-9]/g, ""),
@@ -549,7 +555,7 @@ export default function ProductUploadScreen() {
             <FormField
               label="Length"
               value={fields.length}
-              onChangeText={(v) =>
+              onChangeText={(v: any) =>
                 setFields((f) => ({ ...f, length: v.replace(/[^0-9.]/g, "") }))
               }
               keyboardType="numeric"
@@ -559,7 +565,7 @@ export default function ProductUploadScreen() {
             <FormField
               label="Width"
               value={fields.width}
-              onChangeText={(v) =>
+              onChangeText={(v: any) =>
                 setFields((f) => ({ ...f, width: v.replace(/[^0-9.]/g, "") }))
               }
               keyboardType="numeric"
@@ -569,7 +575,7 @@ export default function ProductUploadScreen() {
             <FormField
               label="Height"
               value={fields.height}
-              onChangeText={(v) =>
+              onChangeText={(v: any) =>
                 setFields((f) => ({ ...f, height: v.replace(/[^0-9.]/g, "") }))
               }
               keyboardType="numeric"
@@ -629,7 +635,7 @@ export default function ProductUploadScreen() {
           <FormField
             label="Fixed Shipping Cost (₹)"
             value={fields.fixedShippingCost}
-            onChangeText={(v) =>
+            onChangeText={(v: any) =>
               setFields((f) => ({
                 ...f,
                 fixedShippingCost: v.replace(/[^0-9.]/g, ""),
@@ -678,13 +684,12 @@ export default function ProductUploadScreen() {
               <Text style={styles.addVariantTxt}>+ Add Variant</Text>
             </TouchableOpacity>
           </View>
-          {variants.map((v, idx) => (
+          {variants.map((v: any, idx: any) => (
             <VariantFields
               key={idx}
               variant={v}
-              onChange={(updated) => updateVariant(idx, updated)}
+              onChange={(updated: any) => updateVariant(idx, updated)}
               onRemove={() => removeVariant(idx)}
-              canRemove={variants.length > 1}
             />
           ))}
         </View>
