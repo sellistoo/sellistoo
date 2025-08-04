@@ -246,6 +246,7 @@ export default function ProductListScreen() {
     <KeyboardAvoidingView
       style={{ flex: 1 }}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
+      keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0} // Adjust height as needed for your app!
     >
       <View style={styles.container}>
         <Text style={styles.header}>Your Products</Text>
@@ -278,38 +279,43 @@ export default function ProductListScreen() {
             ListEmptyComponent={
               <Text style={styles.empty}>No products found.</Text>
             }
-            contentContainerStyle={{ paddingBottom: 20 }}
+            ListFooterComponent={
+              <View style={styles.paginationFooter}>
+                <View style={styles.pagination}>
+                  <TouchableOpacity
+                    style={[
+                      styles.pageBtn,
+                      currentPage === 1 && styles.pageBtnDisabled,
+                    ]}
+                    disabled={currentPage === 1}
+                    onPress={() =>
+                      setCurrentPage((cur) => Math.max(1, cur - 1))
+                    }
+                  >
+                    <Text style={styles.pageBtnLabel}>Previous</Text>
+                  </TouchableOpacity>
+                  <Text style={styles.pageText}>
+                    Page {currentPage} of {totalPages}
+                  </Text>
+                  <TouchableOpacity
+                    style={[
+                      styles.pageBtn,
+                      currentPage === totalPages && styles.pageBtnDisabled,
+                    ]}
+                    disabled={currentPage === totalPages}
+                    onPress={() =>
+                      setCurrentPage((cur) => Math.min(totalPages, cur + 1))
+                    }
+                  >
+                    <Text style={styles.pageBtnLabel}>Next</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            }
+            contentContainerStyle={{ paddingBottom: 110 }} // 110+ for tab bar and keyboard avoid
+            keyboardShouldPersistTaps="handled"
           />
         )}
-
-        {/* Pagination */}
-        <View style={styles.pagination}>
-          <TouchableOpacity
-            style={[
-              styles.pageBtn,
-              currentPage === 1 && styles.pageBtnDisabled,
-            ]}
-            disabled={currentPage === 1}
-            onPress={() => setCurrentPage((cur) => Math.max(1, cur - 1))}
-          >
-            <Text style={styles.pageBtnLabel}>Previous</Text>
-          </TouchableOpacity>
-          <Text style={styles.pageText}>
-            Page {currentPage} of {totalPages}
-          </Text>
-          <TouchableOpacity
-            style={[
-              styles.pageBtn,
-              currentPage === totalPages && styles.pageBtnDisabled,
-            ]}
-            disabled={currentPage === totalPages}
-            onPress={() =>
-              setCurrentPage((cur) => Math.min(totalPages, cur + 1))
-            }
-          >
-            <Text style={styles.pageBtnLabel}>Next</Text>
-          </TouchableOpacity>
-        </View>
       </View>
     </KeyboardAvoidingView>
   );
@@ -468,5 +474,10 @@ const styles = StyleSheet.create({
     textAlign: "center",
     fontSize: 16,
     fontWeight: "400",
+  },
+  paginationFooter: {
+    backgroundColor: "transparent",
+    paddingBottom: 20,
+    alignItems: "center",
   },
 });
