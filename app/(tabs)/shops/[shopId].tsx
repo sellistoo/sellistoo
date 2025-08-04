@@ -1,7 +1,9 @@
 import api from "@/api";
 import { useCart } from "@/hooks/useCart";
+import { useFavorites } from "@/hooks/useFavorites";
+import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
-import { useLocalSearchParams, useRouter } from "expo-router"; // <-- useRouter, not useNavigation!
+import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -39,9 +41,11 @@ const itemsPerPage = 20;
 
 export default function ShopScreen() {
   const { shopId } = useLocalSearchParams();
-  const router = useRouter(); // useRouter for Expo Router navigation
+  const router = useRouter();
   const navigation = useNavigation();
   const { addToCart } = useCart();
+
+  const { isFavorite, addToFavorites, removeFromFavorites } = useFavorites();
 
   const [shop, setShop] = useState<Shop | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
@@ -52,7 +56,6 @@ export default function ShopScreen() {
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
 
-  // Debounce search input to avoid frequent API calls
   useEffect(() => {
     const timeout = setTimeout(() => setDebouncedSearchTerm(searchTerm), 500);
     return () => clearTimeout(timeout);
@@ -75,14 +78,11 @@ export default function ShopScreen() {
     if (shopId) fetchShop();
   }, [shopId]);
 
-  // Update native header title after shop data loads
   useEffect(() => {
     if (shop?.storeName) {
       navigation.setOptions({ title: shop.storeName });
     }
   }, [shop?.storeName, navigation]);
-
-  //
 
   // Fetch products for the shop with pagination and search
   const loadProducts = useCallback(
@@ -124,21 +124,18 @@ export default function ShopScreen() {
     [shop?.userId, debouncedSearchTerm, page]
   );
 
-  // Reload products on userId or debounced search term change
   useEffect(() => {
     if (shop?.userId) {
       loadProducts(true);
     }
   }, [shop?.userId, debouncedSearchTerm]);
 
-  // Load more products on page increment
   useEffect(() => {
     if (shop?.userId && page > 1) {
       loadProducts();
     }
   }, [page]);
 
-  // Handle add to cart action
   const onAddToCart = (product: Product) => {
     addToCart({
       product: product._id || product.id,
@@ -216,41 +213,63 @@ export default function ShopScreen() {
           ListFooterComponent={
             fetchingMore ? <ActivityIndicator style={{ margin: 12 }} /> : null
           }
-          renderItem={({ item }) => (
-            <TouchableOpacity // <<-- Tap on card navigates!
-              style={styles.card}
-              activeOpacity={0.88}
-              onPress={() => router.push(`/product/${item._id || item.id}`)}
-            >
-              <Image
-                source={{ uri: item.images?.[0] ?? "https://placehold.co/150" }}
-                style={styles.productImg}
-                resizeMode="cover"
-              />
-              <Text style={styles.pName} numberOfLines={1}>
-                {item.name}
-              </Text>
-              <View style={{ flexDirection: "row", alignItems: "center" }}>
-                {item.salePrice ? (
-                  <>
-                    <Text style={styles.pSale}>₹{item.salePrice}</Text>
-                    <Text style={styles.pPrice}>₹{item.price}</Text>
-                  </>
-                ) : (
-                  <Text style={styles.pSale}>₹{item.price}</Text>
-                )}
-              </View>
+          renderItem={({ item }) => {
+            const pid = item._id || item.id;
+            const fav = isFavorite(pid);
+            return (
               <TouchableOpacity
-                style={styles.addBtn}
-                onPress={(e) => {
-                  e.stopPropagation?.();
-                  onAddToCart(item);
-                }}
+                style={styles.card}
+                activeOpacity={0.88}
+                onPress={() => router.push(`/product/${pid}`)}
               >
-                <Text style={styles.addBtnText}>Add to Cart</Text>
+                <View>
+                  {/* Fav icon in absolute top-right */}
+                  <TouchableOpacity
+                    style={styles.favIconBtn}
+                    onPress={(e) => {
+                      e.stopPropagation?.();
+                      fav ? removeFromFavorites(pid) : addToFavorites(pid);
+                    }}
+                  >
+                    <Ionicons
+                      name={fav ? "heart" : "heart-outline"}
+                      size={22}
+                      color={fav ? "#e11d48" : "#888"}
+                    />
+                  </TouchableOpacity>
+                  <Image
+                    source={{
+                      uri: item.images?.[0] ?? "https://placehold.co/150",
+                    }}
+                    style={styles.productImg}
+                    resizeMode="cover"
+                  />
+                </View>
+                <Text style={styles.pName} numberOfLines={1}>
+                  {item.name}
+                </Text>
+                <View style={{ flexDirection: "row", alignItems: "center" }}>
+                  {item.salePrice ? (
+                    <>
+                      <Text style={styles.pSale}>₹{item.salePrice}</Text>
+                      <Text style={styles.pPrice}>₹{item.price}</Text>
+                    </>
+                  ) : (
+                    <Text style={styles.pSale}>₹{item.price}</Text>
+                  )}
+                </View>
+                <TouchableOpacity
+                  style={styles.addBtn}
+                  onPress={(e) => {
+                    e.stopPropagation?.();
+                    onAddToCart(item);
+                  }}
+                >
+                  <Text style={styles.addBtnText}>Add to Cart</Text>
+                </TouchableOpacity>
               </TouchableOpacity>
-            </TouchableOpacity>
-          )}
+            );
+          }}
         />
       )}
     </SafeAreaView>
@@ -296,6 +315,8 @@ const styles = StyleSheet.create({
     padding: 12,
     alignItems: "center",
     elevation: 1,
+    position: "relative",
+    // minHeight: 220,
   },
   productImg: {
     width: 110,
@@ -303,6 +324,20 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     marginBottom: 7,
     backgroundColor: "#ececec",
+  },
+  favIconBtn: {
+    position: "absolute",
+    top: 4,
+    right: 4,
+    zIndex: 3,
+    backgroundColor: "#fff",
+    borderRadius: 16,
+    padding: 5,
+    elevation: 2,
+    shadowColor: "#000",
+    shadowOpacity: 0.11,
+    shadowRadius: 5,
+    shadowOffset: { width: 0, height: 2 },
   },
   pName: {
     fontWeight: "bold",
