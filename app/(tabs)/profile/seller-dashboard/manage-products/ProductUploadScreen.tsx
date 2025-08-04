@@ -1,6 +1,7 @@
 import api from "@/api";
 import { Colors } from "@/constants/Colors";
 import { useColorScheme } from "@/hooks/useColorScheme";
+import { useFeaturedCategories } from "@/hooks/useFeaturedCategories";
 import { useUserInfo } from "@/hooks/useUserInfo";
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
@@ -175,6 +176,7 @@ export default function ProductUploadScreen() {
   const { userInfo } = useUserInfo();
   const colorScheme = useColorScheme();
   const theme = Colors[colorScheme ?? "light"];
+  const { featuredCategories, loading: catLoading } = useFeaturedCategories();
 
   const [fields, setFields] = useState({
     name: "",
@@ -366,26 +368,35 @@ export default function ProductUploadScreen() {
           />
           <Text style={styles.label}>Category*</Text>
           <View style={styles.pickerRow}>
-            {CATEGORIES.map((c) => (
-              <TouchableOpacity
-                key={c.id}
-                style={[
-                  styles.catBtn,
-                  fields.categoryId === c.id && styles.catBtnActive,
-                ]}
-                onPress={() => setFields((f) => ({ ...f, categoryId: c.id }))}
-              >
-                <Text
+            {catLoading ? (
+              <Text style={{ color: theme.mutedText }}>Loading…</Text>
+            ) : featuredCategories.length === 0 ? (
+              <Text style={{ color: theme.destructive }}>No categories</Text>
+            ) : (
+              featuredCategories.map((c) => (
+                <TouchableOpacity
+                  key={c._id}
                   style={[
-                    styles.catBtnLabel,
-                    fields.categoryId === c.id && styles.catBtnLabelActive,
+                    styles.catBtn,
+                    fields.categoryId === c._id && styles.catBtnActive,
                   ]}
+                  onPress={() =>
+                    setFields((f) => ({ ...f, categoryId: c._id }))
+                  }
                 >
-                  {c.name}
-                </Text>
-              </TouchableOpacity>
-            ))}
+                  <Text
+                    style={[
+                      styles.catBtnLabel,
+                      fields.categoryId === c._id && styles.catBtnLabelActive,
+                    ]}
+                  >
+                    {c.name}
+                  </Text>
+                </TouchableOpacity>
+              ))
+            )}
           </View>
+
           <FormField
             label="Description*"
             value={fields.description}
