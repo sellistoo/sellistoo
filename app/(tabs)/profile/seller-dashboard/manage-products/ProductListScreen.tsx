@@ -1,9 +1,13 @@
-import React, { useEffect, useState } from "react";
+import api from "@/api";
+import { useUserInfo } from "@/hooks/useUserInfo";
+import React, { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
   FlatList,
   Image,
+  KeyboardAvoidingView,
+  Platform,
   StyleSheet,
   Text,
   TextInput,
@@ -22,199 +26,447 @@ interface Product {
   images: string[];
 }
 
+const itemsPerPage = 6;
+
 export default function ProductListScreen() {
-  const itemsPerPage = 5;
-
+  const { userInfo } = useUserInfo();
   const [products, setProducts] = useState<Product[]>([]);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
   const [total, setTotal] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editedFields, setEditedFields] = useState<Partial<Product>>({});
+  const [refreshing, setRefreshing] = useState(false);
+  const inputRefs = useRef<{ [key: string]: TextInput | null }>({});
 
+  // Fetch products with pagination and search
   const fetchProducts = async () => {
+    if (!userInfo?.id) return;
+    setLoading(true);
     try {
-      setLoading(true);
-
-      // Dummy data for development/testing
-      const dummyData: Product[] = [
-        {
-          id: "1",
-          name: "Sample Product 1",
-          description: "Description for product 1",
-          price: 1200,
-          salePrice: 999,
-          quantity: 10,
-          sku: "SKU001",
-          images: ["https://via.placeholder.com/60"],
-        },
-        {
-          id: "2",
-          name: "Sample Product 2",
-          description: "Description for product 2",
-          price: 800,
-          salePrice: 750,
-          quantity: 5,
-          sku: "SKU002",
-          images: ["https://via.placeholder.com/60"],
-        },
-      ];
-
-      setProducts(dummyData);
-      setTotal(dummyData.length);
-
-      // Uncomment for real API call
-      /*
       const url = searchQuery
-        ? `/seller/elestic/products/{sellerId}/search`
-        : `/seller/elestic/products/{sellerId}`;
-      const res = await axios.get(url, {
+        ? `/seller/elestic/products/${userInfo.id}/search`
+        : `/seller/elestic/products/${userInfo.id}`;
+      const res = await api.get(url, {
         params: {
           page: currentPage,
           limit: itemsPerPage,
           query: searchQuery,
         },
       });
-      setProducts(res.data.data);
-      setTotal(res.data.total);
-      */
+      setProducts(res.data.data || []);
+      setTotal(res.data.total.value || 0);
     } catch (error) {
       Alert.alert("Error", "Failed to load products.");
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
 
   useEffect(() => {
     fetchProducts();
-  }, [currentPage, searchQuery]);
+    // eslint-disable-next-line
+  }, [userInfo?.id, currentPage, searchQuery]);
 
-  const totalPages = Math.ceil(total / itemsPerPage);
+  const handleRefresh = () => {
+    setRefreshing(true);
+    fetchProducts();
+  };
 
-  const renderItem = ({ item }: { item: Product }) => (
-    <View style={styles.itemContainer}>
-      <Image
-        source={{ uri: item.images?.[0] || "https://via.placeholder.com/60" }}
-        style={styles.image}
-      />
-      <View style={styles.infoContainer}>
-        <Text style={styles.title}>{item.name}</Text>
-        <Text style={styles.text}>{item.description}</Text>
-        <Text style={styles.text}>Price: ₹{item.price}</Text>
-        <Text style={styles.text}>Sale Price: ₹{item.salePrice}</Text>
-        <Text style={styles.text}>Qty: {item.quantity}</Text>
-        <Text style={styles.text}>SKU: {item.sku}</Text>
+  const handleEdit = (p: Product) => {
+    setEditingId(p.id);
+    setEditedFields({
+      name: p.name,
+      description: p.description,
+      price: p.price,
+      salePrice: p.salePrice,
+      quantity: p.quantity,
+      sku: p.sku,
+    });
+    // Focus first input after setState
+    setTimeout(() => {
+      inputRefs.current["description"]?.focus();
+    }, 120);
+  };
+
+  const handleSave = async (id: string) => {
+    try {
+      await api.put(`/product/${id}`, editedFields);
+      setEditingId(null);
+      setEditedFields({});
+      fetchProducts();
+      Alert.alert("Success", "Product updated successfully");
+    } catch (e) {
+      Alert.alert("Update Failed", "Could not update product.");
+    }
+  };
+
+  const handleDelete = (id: string) => {
+    Alert.alert(
+      "Delete product?",
+      "Are you sure you want to delete this product?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await api.delete(`/product/${id}`);
+              fetchProducts();
+              Alert.alert("Deleted", "Product deleted successfully");
+            } catch (e) {
+              Alert.alert("Error", "Unable to delete product.");
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const totalPages = Math.max(1, Math.ceil(total / itemsPerPage));
+
+  const renderProduct = ({ item }: { item: Product }) => {
+    const editing = editingId === item.id;
+    return (
+      <View style={styles.itemContainer}>
+        <Image
+          source={{ uri: item.images?.[0] || "https://via.placeholder.com/60" }}
+          style={styles.image}
+        />
+        <View style={styles.infoContainer}>
+          <Text style={styles.title}>{item.name}</Text>
+          {editing ? (
+            <>
+              <TextInput
+                ref={(r) => {
+                  inputRefs.current["description"] = r;
+                }}
+                style={styles.editInput}
+                value={editedFields.description ?? ""}
+                onChangeText={(v) =>
+                  setEditedFields((prev) => ({ ...prev, description: v }))
+                }
+                placeholder="Description"
+              />
+              <View style={styles.editRow}>
+                <TextInput
+                  style={styles.editField}
+                  value={String(editedFields.price ?? "")}
+                  onChangeText={(v) =>
+                    setEditedFields((prev) => ({ ...prev, price: +v }))
+                  }
+                  placeholder="Price"
+                  keyboardType="numeric"
+                />
+                <TextInput
+                  style={styles.editField}
+                  value={String(editedFields.salePrice ?? "")}
+                  onChangeText={(v) =>
+                    setEditedFields((prev) => ({ ...prev, salePrice: +v }))
+                  }
+                  placeholder="Sale Price"
+                  keyboardType="numeric"
+                />
+                <TextInput
+                  style={styles.editField}
+                  value={String(editedFields.quantity ?? "")}
+                  onChangeText={(v) =>
+                    setEditedFields((prev) => ({ ...prev, quantity: +v }))
+                  }
+                  placeholder="Qty"
+                  keyboardType="numeric"
+                />
+              </View>
+              <TextInput
+                style={[styles.editInput, { marginTop: 6 }]}
+                value={editedFields.sku}
+                onChangeText={(v) =>
+                  setEditedFields((prev) => ({ ...prev, sku: v }))
+                }
+                placeholder="SKU"
+              />
+              <View style={{ flexDirection: "row", marginTop: 10 }}>
+                <TouchableOpacity
+                  style={[styles.actionBtn, { backgroundColor: "#10b981" }]}
+                  onPress={() => handleSave(item.id)}
+                >
+                  <Text style={styles.actionBtnLabel}>Save</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.actionBtn, { backgroundColor: "#e5e7eb" }]}
+                  onPress={() => {
+                    setEditingId(null);
+                    setEditedFields({});
+                  }}
+                >
+                  <Text style={[styles.actionBtnLabel, { color: "#666" }]}>
+                    Cancel
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </>
+          ) : (
+            <>
+              <Text style={styles.text} numberOfLines={2}>
+                {item.description}
+              </Text>
+              <View style={[styles.priceRow]}>
+                <Text style={styles.priceText}>₹{item.price}</Text>
+                {item.salePrice ? (
+                  <Text style={styles.salePriceText}>₹{item.salePrice}</Text>
+                ) : null}
+                <Text style={styles.qtyText}>Qty: {item.quantity}</Text>
+              </View>
+              <Text style={styles.text}>SKU: {item.sku}</Text>
+              <View style={{ flexDirection: "row", marginTop: 7, gap: 9 }}>
+                <TouchableOpacity
+                  style={[styles.actionBtn, { backgroundColor: "#6366f1" }]}
+                  onPress={() => handleEdit(item)}
+                >
+                  <Text style={styles.actionBtnLabel}>Edit</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.actionBtn, { backgroundColor: "#f43f5e" }]}
+                  onPress={() => handleDelete(item.id)}
+                >
+                  <Text style={styles.actionBtnLabel}>Delete</Text>
+                </TouchableOpacity>
+              </View>
+            </>
+          )}
+        </View>
       </View>
-    </View>
-  );
+    );
+  };
 
   return (
-    <View style={styles.container}>
-      <TextInput
-        placeholder="Search..."
-        style={styles.searchInput}
-        value={searchQuery}
-        onChangeText={(text) => {
-          setCurrentPage(1);
-          setSearchQuery(text);
-        }}
-      />
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+    >
+      <View style={styles.container}>
+        <Text style={styles.header}>Your Products</Text>
 
-      {loading ? (
-        <ActivityIndicator
-          size="large"
-          color="#007bff"
-          style={{ marginTop: 20 }}
+        {/* Search Bar */}
+        <TextInput
+          placeholder="Search by title, SKU or description..."
+          style={styles.searchInput}
+          value={searchQuery}
+          onChangeText={(text) => {
+            setCurrentPage(1);
+            setSearchQuery(text);
+          }}
+          autoCorrect={false}
         />
-      ) : (
-        <FlatList
-          data={products}
-          keyExtractor={(item) => item.id}
-          renderItem={renderItem}
-          ListEmptyComponent={
-            <Text style={{ textAlign: "center", marginTop: 20 }}>
-              No products found.
-            </Text>
-          }
-        />
-      )}
 
-      <View style={styles.pagination}>
-        <TouchableOpacity
-          onPress={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-          disabled={currentPage === 1}
-          style={styles.pageButton}
-        >
-          <Text>Previous</Text>
-        </TouchableOpacity>
+        {loading && products.length === 0 ? (
+          <ActivityIndicator
+            size="large"
+            color="#6366f1"
+            style={{ marginTop: 32 }}
+          />
+        ) : (
+          <FlatList
+            data={products}
+            keyExtractor={(item) => item.id}
+            renderItem={renderProduct}
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            ListEmptyComponent={
+              <Text style={styles.empty}>No products found.</Text>
+            }
+            contentContainerStyle={{ paddingBottom: 20 }}
+          />
+        )}
 
-        <Text style={styles.pageText}>
-          Page {currentPage} of {totalPages || 1}
-        </Text>
-
-        <TouchableOpacity
-          onPress={() =>
-            setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-          }
-          disabled={currentPage === totalPages}
-          style={styles.pageButton}
-        >
-          <Text>Next</Text>
-        </TouchableOpacity>
+        {/* Pagination */}
+        <View style={styles.pagination}>
+          <TouchableOpacity
+            style={[
+              styles.pageBtn,
+              currentPage === 1 && styles.pageBtnDisabled,
+            ]}
+            disabled={currentPage === 1}
+            onPress={() => setCurrentPage((cur) => Math.max(1, cur - 1))}
+          >
+            <Text style={styles.pageBtnLabel}>Previous</Text>
+          </TouchableOpacity>
+          <Text style={styles.pageText}>
+            Page {currentPage} of {totalPages}
+          </Text>
+          <TouchableOpacity
+            style={[
+              styles.pageBtn,
+              currentPage === totalPages && styles.pageBtnDisabled,
+            ]}
+            disabled={currentPage === totalPages}
+            onPress={() =>
+              setCurrentPage((cur) => Math.min(totalPages, cur + 1))
+            }
+          >
+            <Text style={styles.pageBtnLabel}>Next</Text>
+          </TouchableOpacity>
+        </View>
       </View>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: "#f6f7fb",
     padding: 16,
+  },
+  header: {
+    fontSize: 22,
+    fontWeight: "700",
+    marginBottom: 8,
+    color: "#22223b",
+    letterSpacing: 0.1,
   },
   searchInput: {
     borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 8,
-    padding: 10,
-    marginBottom: 10,
+    borderColor: "#dedede",
+    borderRadius: 14,
+    padding: 12,
+    marginBottom: 13,
+    backgroundColor: "#fff",
+    fontSize: 15.5,
   },
   itemContainer: {
     flexDirection: "row",
-    marginBottom: 12,
-    backgroundColor: "#f9f9f9",
-    padding: 10,
-    borderRadius: 8,
+    borderRadius: 12,
+    backgroundColor: "#fff",
+    marginBottom: 13,
+    elevation: 1,
+    padding: 13,
+    alignItems: "flex-start",
+    shadowColor: "#111",
+    shadowOpacity: 0.07,
+    shadowRadius: 7,
+    shadowOffset: { width: 0, height: 2 },
   },
   image: {
-    width: 60,
-    height: 60,
-    borderRadius: 8,
-    marginRight: 10,
+    width: 64,
+    height: 64,
+    borderRadius: 9,
+    marginRight: 13,
+    backgroundColor: "#ececec",
   },
   infoContainer: {
     flex: 1,
+    justifyContent: "center",
   },
   title: {
     fontWeight: "bold",
-    fontSize: 16,
-    marginBottom: 4,
+    fontSize: 17,
+    marginBottom: 2,
+    color: "#22223b",
+  },
+  priceRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 3,
+    flexWrap: "wrap",
+    gap: 10,
+  },
+  priceText: {
+    fontSize: 15.5,
+    color: "#6366f1",
+    fontWeight: "700",
+    marginRight: 7,
+  },
+  salePriceText: {
+    textDecorationLine: "line-through",
+    color: "#7c7c7c",
+    marginRight: 7,
+    fontSize: 13.4,
+  },
+  qtyText: {
+    marginLeft: 0,
+    fontSize: 13.9,
+    color: "#22223b",
   },
   text: {
+    fontSize: 14.2,
+    color: "#22223b",
+    marginBottom: 2,
+  },
+  editInput: {
+    backgroundColor: "#f5f5fd",
+    borderRadius: 9,
+    borderWidth: 1,
+    borderColor: "#ddd",
+    paddingHorizontal: 9,
+    marginBottom: 5,
     fontSize: 14,
-    color: "#333",
+    color: "#22223b",
+  },
+  editRow: {
+    flexDirection: "row",
+    gap: 7,
+    marginVertical: 2,
+  },
+  editField: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: "#ddd",
+    borderRadius: 9,
+    paddingHorizontal: 7,
+    marginRight: 6,
+    backgroundColor: "#f5f5fd",
+    fontSize: 13.5,
+    color: "#22223b",
+  },
+  actionBtn: {
+    paddingVertical: 7,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    marginRight: 5,
+  },
+  actionBtnLabel: {
+    color: "#fff",
+    fontWeight: "bold",
+    fontSize: 14.7,
   },
   pagination: {
     flexDirection: "row",
-    justifyContent: "space-between",
+    justifyContent: "center",
     alignItems: "center",
-    marginTop: 16,
+    gap: 17,
+    marginTop: 6,
+    paddingBottom: 16,
+    backgroundColor: "transparent",
   },
-  pageButton: {
-    padding: 8,
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 6,
+  pageBtn: {
+    paddingHorizontal: 16,
+    paddingVertical: 7,
+    backgroundColor: "#6366f1",
+    borderRadius: 999,
+    marginHorizontal: 4,
+  },
+  pageBtnDisabled: {
+    backgroundColor: "#c7d1f7",
+  },
+  pageBtnLabel: {
+    color: "#fff",
+    fontWeight: "700",
+    fontSize: 14,
   },
   pageText: {
-    fontSize: 14,
+    fontSize: 15.1,
+    color: "#22223b",
+    fontWeight: "500",
+  },
+  empty: {
+    marginTop: 42,
+    color: "#555",
+    textAlign: "center",
+    fontSize: 16,
+    fontWeight: "400",
   },
 });
