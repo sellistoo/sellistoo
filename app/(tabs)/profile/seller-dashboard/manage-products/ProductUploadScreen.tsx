@@ -123,20 +123,15 @@ function VariantFields({ variant, onChange, onRemove, canRemove }: any) {
     <View style={styles.variantBlock}>
       <View style={styles.rowCenterSpace}>
         <Text style={styles.variantTitle}>Variant</Text>
-        {canRemove && (
-          <TouchableOpacity
-            onPress={onRemove}
-            accessibilityLabel="Remove variant"
-            style={styles.variantRemoveBtn}
-            hitSlop={10}
-          >
-            <Ionicons
-              name="trash-outline"
-              size={20}
-              color={theme.destructive}
-            />
-          </TouchableOpacity>
-        )}
+
+        <TouchableOpacity
+          onPress={onRemove}
+          accessibilityLabel="Remove variant"
+          style={styles.variantRemoveBtn}
+          hitSlop={10}
+        >
+          <Ionicons name="trash-outline" size={20} color={theme.destructive} />
+        </TouchableOpacity>
       </View>
       <FormField
         label="SKU*"
@@ -355,8 +350,32 @@ export default function ProductUploadScreen() {
     try {
       await api.post("/product", payload);
       Toast.show({ type: "success", text1: "Product uploaded!" });
-      router.push("./ProductListScreen");
-      // Optionally, reset fields here...
+      setFields({
+        name: "",
+        description: "",
+        categoryId: "",
+        brand: "",
+        isReturnable: false,
+        returnWindow: "",
+        price: "",
+        salePrice: "",
+        quantity: "",
+        sku: "",
+        gstPercentage: "",
+        hsnCode: "",
+        shippingWeight: "",
+        isFreeShipping: true,
+        fixedShippingCost: "",
+        length: "",
+        width: "",
+        height: "",
+        unit: UNITS[0],
+        images: [null, null, null, null],
+      });
+      setVariants([]);
+      setTimeout(() => {
+        router.push("./ProductListScreen");
+      }, 1100); // 1.1 seconds
     } catch {
       Toast.show({ type: "error", text1: "Could not upload product." });
     } finally {
