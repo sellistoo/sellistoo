@@ -18,11 +18,14 @@ interface Stats {
   totalEarnings: number;
 }
 
+// -- Sets native header title in Expo Router/React Navigation
+export const options = { title: "Dashboard" };
+
 export default function SellerDashboardScreen() {
   const theme = Colors[useColorScheme() ?? "light"];
   const router = useRouter();
 
-  const [stats, setStats] = useState<Stats>({
+  const [stats] = useState<Stats>({
     totalSales: 150000,
     productCount: 42,
     totalOrders: 128,
@@ -61,7 +64,7 @@ export default function SellerDashboardScreen() {
     {
       title: "Orders",
       description: "Process and manage orders.",
-      onPress: () => router.push("/profile/orders"),
+      onPress: () => router.push("/profile/seller-dashboard/orders"),
     },
   ];
 

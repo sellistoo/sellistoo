@@ -104,10 +104,6 @@ const ManageProductsScreen = () => {
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.background }}>
-      <Text style={[styles.header, { color: theme.text }]}>
-        Manage Products
-      </Text>
-
       <TabView
         navigationState={{ index, routes }}
         renderScene={renderScene}

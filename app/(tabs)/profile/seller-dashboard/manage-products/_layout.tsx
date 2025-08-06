@@ -7,7 +7,6 @@ export default function ManageProductsLayout() {
         name="index"
         options={{
           title: "Manage Products",
-          headerShown: true,
         }}
       />
       <Stack.Screen
