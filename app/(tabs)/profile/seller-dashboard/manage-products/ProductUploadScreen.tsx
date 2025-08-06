@@ -201,7 +201,7 @@ function VariantFields({ variant, onChange, onRemove, canRemove }: any) {
 }
 
 // ---- Main Upload Screen ----
-export default function ProductUploadScreen() {
+export default function ProductUploadScreen({ onProductUploadSuccess }: any) {
   const { userInfo } = useUserInfo();
   const colorScheme = useColorScheme();
   const theme = Colors[colorScheme ?? "light"];
@@ -373,9 +373,12 @@ export default function ProductUploadScreen() {
         images: [null, null, null, null],
       });
       setVariants([]);
+      // setTimeout(() => {
+      //   router.push("./ProductListScreen");
+      // }, 1100); // 1.1 seconds
       setTimeout(() => {
-        router.push("./ProductListScreen");
-      }, 1100); // 1.1 seconds
+        if (onProductUploadSuccess) onProductUploadSuccess();
+      }, 1000);
     } catch {
       Toast.show({ type: "error", text1: "Could not upload product." });
     } finally {

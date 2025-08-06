@@ -1,6 +1,7 @@
 import api from "@/api";
 import { useUserInfo } from "@/hooks/useUserInfo";
-import React, { useEffect, useRef, useState } from "react";
+import { useFocusEffect } from "@react-navigation/native";
+import React, { useCallback, useRef, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -40,7 +41,7 @@ export default function ProductListScreen() {
   const [version, setVersion] = useState(0);
   const inputRefs = useRef<{ [key: string]: TextInput | null }>({});
 
-  // Fetch products with pagination and search
+  // Fetch products (search & pagination aware)
   const fetchProducts = async () => {
     if (!userInfo?.id) return;
     setLoading(true);
@@ -69,10 +70,12 @@ export default function ProductListScreen() {
     }
   };
 
-  useEffect(() => {
-    fetchProducts();
-    // eslint-disable-next-line
-  }, [userInfo?.id, currentPage, searchQuery]);
+  // Always fetch latest when this screen (as a tab or stack page) is focused
+  useFocusEffect(
+    useCallback(() => {
+      fetchProducts();
+    }, [userInfo?.id, currentPage, searchQuery])
+  );
 
   const handleRefresh = () => {
     setRefreshing(true);
@@ -98,14 +101,13 @@ export default function ProductListScreen() {
     try {
       await api.put(`/product/${id}`, editedFields);
 
-      // Immediate UI update: clone and update the item in all cases
+      // Optimistically update the product in the visible list for instant UI feedback
       setProducts((prev) =>
         prev.map((p) =>
           p.id === id
             ? {
                 ...p,
                 ...editedFields,
-                // always force price fields to numbers, even if empty or zero
                 price: Number(editedFields.price ?? p.price),
                 salePrice:
                   editedFields.salePrice !== undefined
@@ -114,7 +116,7 @@ export default function ProductListScreen() {
                 quantity: Number(editedFields.quantity ?? p.quantity),
                 name: editedFields.name ?? p.name,
                 description: editedFields.description ?? p.description,
-                sku: p.sku, // do not allow manual update
+                sku: p.sku,
               }
             : p
         )
@@ -129,7 +131,7 @@ export default function ProductListScreen() {
         text2: "Product updated successfully",
       });
 
-      // Background refresh (but add a slight delay to let backend actually update the record)
+      // Now refresh in background (for server truth)
       setTimeout(() => {
         fetchProducts();
       }, 800);

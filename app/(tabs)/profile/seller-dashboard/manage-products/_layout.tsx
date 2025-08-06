@@ -7,7 +7,7 @@ export default function ManageProductsLayout() {
         name="index"
         options={{
           title: "Manage Products",
-          headerShown: true, // ✅ enable native header to show back button
+          headerShown: true,
         }}
       />
       <Stack.Screen

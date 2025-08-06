@@ -8,7 +8,7 @@ import {
   useWindowDimensions,
   View,
 } from "react-native";
-import { SceneMap, TabView } from "react-native-tab-view";
+import { TabView } from "react-native-tab-view";
 import ProductListScreen from "./ProductListScreen";
 import ProductUploadScreen from "./ProductUploadScreen";
 const TAB_HEIGHT = 46;
@@ -23,10 +23,18 @@ const ManageProductsScreen = () => {
     { key: "list", title: "Product List" },
   ]);
 
-  const renderScene = SceneMap({
-    upload: ProductUploadScreen,
-    list: ProductListScreen,
-  });
+  const renderScene = ({ route }: any) => {
+    switch (route.key) {
+      case "upload":
+        return (
+          <ProductUploadScreen onProductUploadSuccess={() => setIndex(1)} />
+        );
+      case "list":
+        return <ProductListScreen />;
+      default:
+        return null;
+    }
+  };
 
   const renderTabBar = (props: any) => {
     const inputRange = props.navigationState.routes.map((_: any, i: any) => i);
