@@ -1,5 +1,5 @@
 import api from "@/api";
-import { Colors } from "@/constants/Colors"; // <-- adjust if needed
+import { Colors } from "@/constants/Colors";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { useUserInfo } from "@/hooks/useUserInfo";
 import { useFocusEffect } from "@react-navigation/native";
