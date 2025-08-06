@@ -1,13 +1,16 @@
 import api from "@/api";
+import { Colors } from "@/constants/Colors"; // <-- adjust if needed
+import { useColorScheme } from "@/hooks/useColorScheme";
 import { useUserInfo } from "@/hooks/useUserInfo";
 import { useFocusEffect } from "@react-navigation/native";
 import React, { useCallback, useRef, useState } from "react";
 import {
   ActivityIndicator,
-  FlatList,
   Image,
   KeyboardAvoidingView,
   Platform,
+  RefreshControl,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -30,6 +33,8 @@ const itemsPerPage = 6;
 
 export default function ProductListScreen() {
   const { userInfo } = useUserInfo();
+  const colorScheme = useColorScheme();
+  const theme = Colors[colorScheme ?? "light"];
   const [products, setProducts] = useState<Product[]>([]);
   const [total, setTotal] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
@@ -38,10 +43,9 @@ export default function ProductListScreen() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editedFields, setEditedFields] = useState<Partial<Product>>({});
   const [refreshing, setRefreshing] = useState(false);
-  const [version, setVersion] = useState(0);
   const inputRefs = useRef<{ [key: string]: TextInput | null }>({});
 
-  // Fetch products (search & pagination aware)
+  // Fetch products from backend
   const fetchProducts = async () => {
     if (!userInfo?.id) return;
     setLoading(true);
@@ -70,7 +74,7 @@ export default function ProductListScreen() {
     }
   };
 
-  // Always fetch latest when this screen (as a tab or stack page) is focused
+  // Fetch latest data whenever screen is focused or page changes
   useFocusEffect(
     useCallback(() => {
       fetchProducts();
@@ -82,26 +86,11 @@ export default function ProductListScreen() {
     fetchProducts();
   };
 
-  const handleEdit = (p: Product) => {
-    setEditingId(p.id);
-    setEditedFields({
-      name: p.name,
-      description: p.description,
-      price: p.price,
-      salePrice: p.salePrice,
-      quantity: p.quantity,
-      sku: p.sku,
-    });
-    setTimeout(() => {
-      inputRefs.current["description"]?.focus();
-    }, 120);
-  };
-
+  // Optimistic update for edit (immediate UI update)
   const handleSave = async (id: string) => {
     try {
       await api.put(`/product/${id}`, editedFields);
 
-      // Optimistically update the product in the visible list for instant UI feedback
       setProducts((prev) =>
         prev.map((p) =>
           p.id === id
@@ -124,17 +113,15 @@ export default function ProductListScreen() {
 
       setEditingId(null);
       setEditedFields({});
-
       Toast.show({
         type: "success",
         text1: "Success",
         text2: "Product updated successfully",
       });
 
-      // Now refresh in background (for server truth)
       setTimeout(() => {
         fetchProducts();
-      }, 800);
+      }, 1800);
     } catch (e) {
       Toast.show({
         type: "error",
@@ -144,17 +131,23 @@ export default function ProductListScreen() {
     }
   };
 
+  // Optimistic update for delete (immediate UI update)
   const handleDelete = (id: string) => {
     Toast.show({
       type: "info",
       text1: "Deleting...",
       text2: "Deleting product, please wait.",
     });
+
+    setProducts((prev) => prev.filter((p) => p.id !== id));
+    setTotal((prev) => (prev > 0 ? prev - 1 : 0));
+
     setTimeout(async () => {
       try {
         await api.delete(`/product/${id}`);
-        await fetchProducts();
-        setVersion((v) => v + 1); // ensure UI refresh after deletion
+        setTimeout(() => {
+          fetchProducts();
+        }, 1800);
         Toast.show({
           type: "success",
           text1: "Deleted",
@@ -166,13 +159,32 @@ export default function ProductListScreen() {
           text1: "Error",
           text2: "Unable to delete product.",
         });
+        setTimeout(() => {
+          fetchProducts();
+        }, 1800);
       }
     }, 600);
   };
 
+  const handleEdit = (p: Product) => {
+    setEditingId(p.id);
+    setEditedFields({
+      name: p.name,
+      description: p.description,
+      price: p.price,
+      salePrice: p.salePrice,
+      quantity: p.quantity,
+      sku: p.sku,
+    });
+    setTimeout(() => {
+      inputRefs.current["description"]?.focus();
+    }, 120);
+  };
+
   const totalPages = Math.max(1, Math.ceil(total / itemsPerPage));
 
-  const renderProduct = ({ item }: { item: Product }) => {
+  // Renders each product (edit or view mode)
+  const renderProduct = (item: Product) => {
     const editing = editingId === item.id;
     const hasSale =
       item.salePrice != null &&
@@ -184,93 +196,155 @@ export default function ProductListScreen() {
         : item.price;
 
     return (
-      <View style={styles.itemContainer}>
+      <View
+        style={[
+          styles.itemContainer,
+          { backgroundColor: theme.cardBg, shadowColor: theme.icon },
+        ]}
+        key={item.id}
+      >
         <Image
           source={{ uri: item.images?.[0] || "https://via.placeholder.com/60" }}
           style={styles.image}
         />
         <View style={styles.infoContainer}>
-          <Text style={styles.title}>{item.name}</Text>
+          <Text style={[styles.title, { color: theme.text }]}>{item.name}</Text>
           {editing ? (
             <>
               <View style={{ marginBottom: 6 }}>
-                <Text style={styles.inputLabel}>Description</Text>
+                <Text style={[styles.inputLabel, { color: theme.mutedText }]}>
+                  Description
+                </Text>
                 <TextInput
                   ref={(r) => {
                     inputRefs.current["description"] = r;
                   }}
-                  style={styles.editInput}
+                  style={[
+                    styles.editInput,
+                    {
+                      backgroundColor: theme.input,
+                      color: theme.text,
+                      borderColor: theme.border,
+                    },
+                  ]}
                   value={editedFields.description ?? ""}
                   onChangeText={(v) =>
                     setEditedFields((prev) => ({ ...prev, description: v }))
                   }
                   placeholder="Description"
+                  placeholderTextColor={theme.mutedText}
                 />
               </View>
               <View style={styles.editRow}>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.inputLabel}>Price</Text>
+                  <Text style={[styles.inputLabel, { color: theme.mutedText }]}>
+                    Price
+                  </Text>
                   <TextInput
-                    style={styles.editField}
+                    style={[
+                      styles.editField,
+                      {
+                        backgroundColor: theme.input,
+                        color: theme.text,
+                        borderColor: theme.border,
+                      },
+                    ]}
                     value={String(editedFields.price ?? "")}
                     onChangeText={(v) =>
                       setEditedFields((prev) => ({ ...prev, price: +v }))
                     }
                     placeholder="Price"
+                    placeholderTextColor={theme.mutedText}
                     keyboardType="numeric"
                   />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.inputLabel}>Sale Price</Text>
+                  <Text style={[styles.inputLabel, { color: theme.mutedText }]}>
+                    Sale Price
+                  </Text>
                   <TextInput
-                    style={styles.editField}
+                    style={[
+                      styles.editField,
+                      {
+                        backgroundColor: theme.input,
+                        color: theme.text,
+                        borderColor: theme.border,
+                      },
+                    ]}
                     value={String(editedFields.salePrice ?? "")}
                     onChangeText={(v) =>
-                      setEditedFields((prev) => ({ ...prev, salePrice: +v }))
+                      setEditedFields((prev) => ({
+                        ...prev,
+                        salePrice: +v,
+                      }))
                     }
                     placeholder="Sale Price"
+                    placeholderTextColor={theme.mutedText}
                     keyboardType="numeric"
                   />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.inputLabel}>Qty</Text>
+                  <Text style={[styles.inputLabel, { color: theme.mutedText }]}>
+                    Qty
+                  </Text>
                   <TextInput
-                    style={styles.editField}
+                    style={[
+                      styles.editField,
+                      {
+                        backgroundColor: theme.input,
+                        color: theme.text,
+                        borderColor: theme.border,
+                      },
+                    ]}
                     value={String(editedFields.quantity ?? "")}
                     onChangeText={(v) =>
                       setEditedFields((prev) => ({ ...prev, quantity: +v }))
                     }
                     placeholder="Qty"
+                    placeholderTextColor={theme.mutedText}
                     keyboardType="numeric"
                   />
                 </View>
               </View>
               <View style={{ marginTop: 6 }}>
-                <Text style={styles.inputLabel}>SKU</Text>
+                <Text style={[styles.inputLabel, { color: theme.mutedText }]}>
+                  SKU
+                </Text>
                 <TextInput
-                  style={[styles.editInput, styles.disabledInput]}
+                  style={[
+                    styles.editInput,
+                    styles.disabledInput,
+                    {
+                      backgroundColor: theme.input,
+                      color: theme.mutedText,
+                      borderColor: theme.border,
+                    },
+                  ]}
                   value={editedFields.sku}
                   editable={false}
                   selectTextOnFocus={false}
                   pointerEvents="none"
                   placeholder="SKU"
+                  placeholderTextColor={theme.mutedText}
                 />
               </View>
               <View style={{ flexDirection: "row", marginTop: 10 }}>
                 <TouchableOpacity
-                  style={[styles.actionBtn, { backgroundColor: "#10b981" }]}
+                  style={[styles.actionBtn, { backgroundColor: theme.success }]}
                   onPress={() => handleSave(item.id)}
                 >
                   <Text style={styles.actionBtnLabel}>Save</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={[styles.actionBtn, { backgroundColor: "#e5e7eb" }]}
+                  style={[styles.actionBtn, { backgroundColor: theme.border }]}
                   onPress={() => {
                     setEditingId(null);
                     setEditedFields({});
                   }}
                 >
-                  <Text style={[styles.actionBtnLabel, { color: "#666" }]}>
+                  <Text
+                    style={[styles.actionBtnLabel, { color: theme.mutedText }]}
+                  >
                     Cancel
                   </Text>
                 </TouchableOpacity>
@@ -278,26 +352,48 @@ export default function ProductListScreen() {
             </>
           ) : (
             <>
-              <Text style={styles.text} numberOfLines={2}>
+              <Text
+                style={[styles.text, { color: theme.text }]}
+                numberOfLines={2}
+              >
                 {item.description}
               </Text>
               <View style={styles.priceRow}>
-                <Text style={styles.priceText}>₹{mainPrice}</Text>
+                <Text style={[styles.priceText, { color: theme.tint }]}>
+                  ₹{mainPrice}
+                </Text>
                 {hasSale && (
-                  <Text style={styles.salePriceText}>₹{item.price}</Text>
+                  <Text
+                    style={[styles.salePriceText, { color: theme.mutedText }]}
+                  >
+                    ₹{item.price}
+                  </Text>
                 )}
-                <Text style={styles.qtyText}>Qty: {item.quantity}</Text>
+                <Text style={[styles.qtyText, { color: theme.text }]}>
+                  Qty: {item.quantity}
+                </Text>
               </View>
-              <Text style={styles.text}>SKU: {item.sku}</Text>
-              <View style={{ flexDirection: "row", marginTop: 7, gap: 9 }}>
+              <Text style={[styles.text, { color: theme.text }]}>
+                SKU: {item.sku}
+              </Text>
+              <View
+                style={{
+                  flexDirection: "row",
+                  marginTop: 7,
+                  gap: 9,
+                }}
+              >
                 <TouchableOpacity
-                  style={[styles.actionBtn, { backgroundColor: "#6366f1" }]}
+                  style={[styles.actionBtn, { backgroundColor: theme.tint }]}
                   onPress={() => handleEdit(item)}
                 >
                   <Text style={styles.actionBtnLabel}>Edit</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={[styles.actionBtn, { backgroundColor: "#f43f5e" }]}
+                  style={[
+                    styles.actionBtn,
+                    { backgroundColor: theme.destructive },
+                  ]}
                   onPress={() => handleDelete(item.id)}
                 >
                   <Text style={styles.actionBtnLabel}>Delete</Text>
@@ -312,108 +408,119 @@ export default function ProductListScreen() {
 
   return (
     <KeyboardAvoidingView
-      style={{ flex: 1 }}
+      style={{ flex: 1, backgroundColor: theme.background }}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
       keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
     >
-      <View style={styles.container}>
-        <Text style={styles.header}>Your Products</Text>
+      <View style={[styles.container, { backgroundColor: theme.background }]}>
+        <Text style={[styles.header, { color: theme.text }]}>
+          Your Products
+        </Text>
         <TextInput
           placeholder="Search by title, SKU or description..."
-          style={styles.searchInput}
+          style={[
+            styles.searchInput,
+            {
+              backgroundColor: theme.input,
+              color: theme.text,
+              borderColor: theme.border,
+            },
+          ]}
           value={searchQuery}
           onChangeText={(text) => {
             setCurrentPage(1);
             setSearchQuery(text);
           }}
+          placeholderTextColor={theme.mutedText}
           autoCorrect={false}
         />
-        {loading && products.length === 0 ? (
-          <ActivityIndicator
-            size="large"
-            color="#6366f1"
-            style={{ marginTop: 32 }}
-          />
-        ) : (
-          <FlatList
-            key={version}
-            data={products}
-            keyExtractor={(item) => item.id}
-            renderItem={renderProduct}
-            refreshing={refreshing}
-            onRefresh={handleRefresh}
-            ListEmptyComponent={
-              <Text style={styles.empty}>No products found.</Text>
-            }
-            ListFooterComponent={
-              <View style={styles.paginationFooter}>
-                <View style={styles.pagination}>
-                  <TouchableOpacity
-                    style={[
-                      styles.pageBtn,
-                      currentPage === 1 && styles.pageBtnDisabled,
-                    ]}
-                    disabled={currentPage === 1}
-                    onPress={() =>
-                      setCurrentPage((cur) => Math.max(1, cur - 1))
-                    }
-                  >
-                    <Text style={styles.pageBtnLabel}>Previous</Text>
-                  </TouchableOpacity>
-                  <Text style={styles.pageText}>
-                    Page {currentPage} of {totalPages}
-                  </Text>
-                  <TouchableOpacity
-                    style={[
-                      styles.pageBtn,
-                      currentPage === totalPages && styles.pageBtnDisabled,
-                    ]}
-                    disabled={currentPage === totalPages}
-                    onPress={() =>
-                      setCurrentPage((cur) => Math.min(totalPages, cur + 1))
-                    }
-                  >
-                    <Text style={styles.pageBtnLabel}>Next</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            }
-            contentContainerStyle={{ paddingBottom: 110 }}
-            keyboardShouldPersistTaps="handled"
-          />
-        )}
+        <ScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={{ paddingBottom: 110 }}
+          keyboardShouldPersistTaps="handled"
+          refreshControl={
+            <RefreshControl
+              colors={[theme.tint]}
+              tintColor={theme.tint}
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              progressBackgroundColor={theme.input}
+            />
+          }
+        >
+          {loading && products.length === 0 ? (
+            <ActivityIndicator
+              size="large"
+              color={theme.tint}
+              style={{ marginTop: 32 }}
+            />
+          ) : products.length === 0 ? (
+            <Text style={[styles.empty, { color: theme.mutedText }]}>
+              No products found.
+            </Text>
+          ) : (
+            products.map((item) => renderProduct(item))
+          )}
+          {/* Pagination */}
+          <View style={styles.paginationFooter}>
+            <View style={styles.pagination}>
+              <TouchableOpacity
+                style={[
+                  styles.pageBtn,
+                  { backgroundColor: theme.tint },
+                  currentPage === 1 && styles.pageBtnDisabled,
+                ]}
+                disabled={currentPage === 1}
+                onPress={() => setCurrentPage((cur) => Math.max(1, cur - 1))}
+              >
+                <Text style={styles.pageBtnLabel}>Previous</Text>
+              </TouchableOpacity>
+              <Text style={[styles.pageText, { color: theme.text }]}>
+                Page {currentPage} of {totalPages}
+              </Text>
+              <TouchableOpacity
+                style={[
+                  styles.pageBtn,
+                  { backgroundColor: theme.tint },
+                  currentPage === totalPages && styles.pageBtnDisabled,
+                ]}
+                disabled={currentPage === totalPages}
+                onPress={() =>
+                  setCurrentPage((cur) => Math.min(totalPages, cur + 1))
+                }
+              >
+                <Text style={styles.pageBtnLabel}>Next</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </ScrollView>
       </View>
     </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#f6f7fb", padding: 16 },
+  container: { flex: 1, padding: 16 },
   header: {
     fontSize: 22,
     fontWeight: "700",
     marginBottom: 8,
-    color: "#22223b",
     letterSpacing: 0.1,
   },
   searchInput: {
     borderWidth: 1,
-    borderColor: "#dedede",
     borderRadius: 14,
     padding: 12,
     marginBottom: 13,
-    backgroundColor: "#fff",
     fontSize: 15.5,
   },
   itemContainer: {
     flexDirection: "row",
     borderRadius: 12,
-    backgroundColor: "#fff",
     marginBottom: 13,
     elevation: 1,
     padding: 13,
     alignItems: "flex-start",
-    shadowColor: "#111",
     shadowOpacity: 0.07,
     shadowRadius: 7,
     shadowOffset: { width: 0, height: 2 },
@@ -430,7 +537,6 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     fontSize: 17,
     marginBottom: 2,
-    color: "#22223b",
   },
   priceRow: {
     flexDirection: "row",
@@ -441,39 +547,31 @@ const styles = StyleSheet.create({
   },
   priceText: {
     fontSize: 15.5,
-    color: "#6366f1",
     fontWeight: "700",
     marginRight: 7,
   },
   salePriceText: {
     textDecorationLine: "line-through",
-    color: "#7c7c7c",
     marginRight: 7,
     fontSize: 13.4,
   },
-  qtyText: { marginLeft: 0, fontSize: 13.9, color: "#22223b" },
-  text: { fontSize: 14.2, color: "#22223b", marginBottom: 2 },
+  qtyText: { marginLeft: 0, fontSize: 13.9 },
+  text: { fontSize: 14.2, marginBottom: 2 },
   editInput: {
-    backgroundColor: "#f5f5fd",
     borderRadius: 9,
     borderWidth: 1,
-    borderColor: "#ddd",
     paddingHorizontal: 9,
     marginBottom: 5,
     fontSize: 14,
-    color: "#22223b",
   },
   editRow: { flexDirection: "row", gap: 7, marginVertical: 2 },
   editField: {
     flex: 1,
     borderWidth: 1,
-    borderColor: "#ddd",
     borderRadius: 9,
     paddingHorizontal: 7,
     marginRight: 6,
-    backgroundColor: "#f5f5fd",
     fontSize: 13.5,
-    color: "#22223b",
   },
   actionBtn: {
     paddingVertical: 7,
@@ -494,16 +592,14 @@ const styles = StyleSheet.create({
   pageBtn: {
     paddingHorizontal: 16,
     paddingVertical: 7,
-    backgroundColor: "#6366f1",
     borderRadius: 999,
     marginHorizontal: 4,
   },
-  pageBtnDisabled: { backgroundColor: "#c7d1f7" },
+  pageBtnDisabled: { opacity: 0.5 },
   pageBtnLabel: { color: "#fff", fontWeight: "700", fontSize: 14 },
-  pageText: { fontSize: 15.1, color: "#22223b", fontWeight: "500" },
+  pageText: { fontSize: 15.1, fontWeight: "500" },
   empty: {
     marginTop: 42,
-    color: "#555",
     textAlign: "center",
     fontSize: 16,
     fontWeight: "400",
@@ -515,11 +611,10 @@ const styles = StyleSheet.create({
   },
   inputLabel: {
     fontSize: 12.7,
-    color: "#4b5563",
     fontWeight: "500",
     marginBottom: 2,
     marginLeft: 2,
     letterSpacing: 0.07,
   },
-  disabledInput: { backgroundColor: "#ececec", color: "#aaa", opacity: 0.85 },
+  disabledInput: { opacity: 0.85 },
 });
