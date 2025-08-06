@@ -2,8 +2,7 @@ import api from "@/api";
 import { Colors } from "@/constants/Colors";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { useUserInfo } from "@/hooks/useUserInfo";
-import { useFocusEffect } from "@react-navigation/native";
-import React, { useCallback, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Image,
@@ -74,12 +73,13 @@ export default function ProductListScreen() {
     }
   };
 
-  // Fetch latest data whenever screen is focused or page changes
-  useFocusEffect(
-    useCallback(() => {
-      fetchProducts();
-    }, [userInfo?.id, currentPage, searchQuery])
-  );
+  useEffect(() => {
+    setCurrentPage(1);
+  }, []);
+
+  useEffect(() => {
+    fetchProducts();
+  }, [currentPage, searchQuery, userInfo?.id]);
 
   const handleRefresh = () => {
     setRefreshing(true);
