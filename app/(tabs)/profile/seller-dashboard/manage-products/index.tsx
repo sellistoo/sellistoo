@@ -11,13 +11,25 @@ import {
 import { TabView } from "react-native-tab-view";
 import ProductListScreen from "./ProductListScreen";
 import ProductUploadScreen from "./ProductUploadScreen";
+
 const TAB_HEIGHT = 46;
 
 const ManageProductsScreen = () => {
   const layout = useWindowDimensions();
   const theme = Colors[useColorScheme() ?? "light"];
 
+  // Add a version timestamp to force remount of ProductListScreen
   const [index, setIndex] = useState(0);
+  const [listTabKey, setListTabKey] = useState(Date.now());
+
+  // This function will be called after product upload to switch tabs and remount ProductListScreen
+  const handleTabSwitchAfterUpload = () => {
+    setTimeout(() => {
+      setListTabKey(Date.now()); // changes key => remounts ProductListScreen from scratch
+      setIndex(1); // switches to List tab
+    }, 1100); // ~1.1s helps backend catch up before list fetches
+  };
+
   const [routes] = useState([
     { key: "upload", title: "Product Upload" },
     { key: "list", title: "Product List" },
@@ -27,17 +39,19 @@ const ManageProductsScreen = () => {
     switch (route.key) {
       case "upload":
         return (
-          <ProductUploadScreen onProductUploadSuccess={() => setIndex(1)} />
+          <ProductUploadScreen
+            onProductUploadSuccess={handleTabSwitchAfterUpload}
+          />
         );
       case "list":
-        return <ProductListScreen />;
+        // The key ensures the list screen remounts (componentWillUnmount/remounts) every time tab is re-activated after upload
+        return <ProductListScreen key={listTabKey} />;
       default:
         return null;
     }
   };
 
   const renderTabBar = (props: any) => {
-    const inputRange = props.navigationState.routes.map((_: any, i: any) => i);
     return (
       <View
         style={[styles.tabBarContainer, { backgroundColor: theme.secondary }]}
@@ -50,7 +64,14 @@ const ManageProductsScreen = () => {
               accessibilityRole="button"
               accessibilityState={isActive ? { selected: true } : {}}
               accessibilityLabel={route.title}
-              onPress={() => setIndex(i)}
+              onPress={() => {
+                // If moving to product list, force fresh mount
+                if (route.key === "list") {
+                  // Always remount ProductListScreen and reset tab state (even if not coming from upload)
+                  setListTabKey(Date.now());
+                }
+                setIndex(i);
+              }}
               activeOpacity={0.88}
               style={[
                 styles.tabItem,
@@ -80,6 +101,7 @@ const ManageProductsScreen = () => {
       </View>
     );
   };
+
   return (
     <View style={{ flex: 1, backgroundColor: theme.background }}>
       <Text style={[styles.header, { color: theme.text }]}>
@@ -111,7 +133,6 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     padding: 3,
     marginTop: 2,
-    // iOS-style elevation:
     shadowColor: "#000",
     shadowOpacity: 0.04,
     shadowRadius: 5,
@@ -127,7 +148,6 @@ const styles = StyleSheet.create({
     marginHorizontal: 2,
     marginVertical: 2,
     backgroundColor: "transparent",
-    // Touchable highlight on Android
     overflow: "hidden",
   },
   tabTitle: {
