@@ -25,6 +25,8 @@ import {
   TextInput,
 } from "react-native-paper";
 
+import RazorpayCheckout from "react-native-razorpay";
+
 export interface Address {
   building: string;
   street: string;
@@ -45,6 +47,7 @@ export interface CartItem {
   sku: string;
   variant?: { size?: string; color?: string };
 }
+
 interface ShippingAPIResponse {
   totalShippingCost: number;
   breakdown: any[];
@@ -73,7 +76,9 @@ interface OrderPayload {
   paymentMethod: string;
   couponCode?: string;
   orderNumber: string;
+  paymentDetails?: any;
 }
+
 const initialAddress: Omit<Address, "isDefault"> = {
   building: "",
   street: "",
@@ -85,13 +90,12 @@ const initialAddress: Omit<Address, "isDefault"> = {
 };
 
 const CheckoutScreen: React.FC = () => {
-  const { cartItems, updateQuantity, removeFromCart } = useCart();
+  const { cartItems, updateQuantity, removeFromCart, clearCart } = useCart();
   const { userInfo } = useUserInfo();
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
   const [showAddAddress, setShowAddAddress] = useState<boolean>(false);
-  const [newAddress, setNewAddress] =
-    useState<Omit<Address, "isDefault">>(initialAddress);
+  const [newAddress, setNewAddress] = useState<Omit<Address, "isDefault">>(initialAddress);
   const [shippingCost, setShippingCost] = useState<number>(0);
   const [shippingBreakdown, setShippingBreakdown] = useState<any[]>([]);
   const [couponCode, setCouponCode] = useState<string>("");
@@ -179,8 +183,49 @@ const CheckoutScreen: React.FC = () => {
     }
   };
 
-  // Place order
-  const handlePlaceOrder = async () => {
+  // Native Razorpay payment handler
+  const handleRazorpayPayment = async () => {
+    if (!userInfo?.id || selectedIdx === null || addresses.length === 0) return;
+    const amount = Number((calculateTotal() - discountAmount).toFixed(2));
+    try {
+      setLoading(true);
+      // 1️⃣ Create Razorpay order on backend
+      const { data: razorpayOrder } = await api.post("/create-order", { amount });
+      const selectedAddress = addresses[selectedIdx];
+      const options = {
+        name: "Sellistoo",
+        description: "Order Payment",
+        key: process.env.EXPO_PUBLIC_RAZORPAY_KEY,
+        amount: (amount * 100).toString(),
+        currency: "INR",
+        order_id: razorpayOrder.id,
+        prefill: {
+          name: userInfo.name,
+          email: userInfo.email,
+          contact: selectedAddress.mobileNumber,
+        },
+        theme: { color: "#3399cc" },
+      };
+      RazorpayCheckout.open(options as any)
+        .then((data: any) => {
+          handlePlaceOrder("Razorpay", "paid", data);
+        })
+        .catch((error: any) => {
+          Alert.alert("Payment Failed", `Reason: ${error.description || "Cancelled"}`);
+        })
+        .finally(() => setLoading(false));
+    } catch (error: any) {
+      setLoading(false);
+      Alert.alert("Payment Error", "Failed to initiate payment. Please try again.");
+    }
+  };
+
+  // Place order handler (COD or after Razorpay Payment)
+  const handlePlaceOrder = async (
+    paymentMethod: string = "cod",
+    paymentStatus: string = "pending",
+    paymentDetails?: any
+  ) => {
     if (!userInfo?.id || selectedIdx === null || addresses.length === 0) return;
     const selectedAddress = addresses[selectedIdx];
     const shippingAddress = `${selectedAddress.building}, ${selectedAddress.street}, ${selectedAddress.city}, ${selectedAddress.state}, ${selectedAddress.zipCode}`;
@@ -192,7 +237,6 @@ const CheckoutScreen: React.FC = () => {
       quantity: item.quantity,
       variant: item.variant ?? undefined,
     }));
-
     const payload: OrderPayload = {
       userId: userInfo.id,
       items,
@@ -201,17 +245,19 @@ const CheckoutScreen: React.FC = () => {
       shippingCost,
       shippingBreakdown,
       currency: "INR",
-      paymentStatus: "pending",
-      paymentMethod: "cod",
+      paymentStatus,
+      paymentMethod,
       couponCode: appliedCoupon || undefined,
       orderNumber: `ORD-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
     };
-
+    if (paymentMethod === "Razorpay" && paymentDetails) {
+      payload.paymentDetails = paymentDetails;
+    }
     try {
       setLoading(true);
       await api.post(`/order`, payload);
       Alert.alert("Success", "Order placed successfully.");
-      // Optionally clear cart here
+      await clearCart();
     } catch (e) {
       Alert.alert("Error", "Failed to place order");
     } finally {
@@ -368,11 +414,7 @@ const CheckoutScreen: React.FC = () => {
                 ]}
               >
                 <Card.Content>
-                  {(
-                    Object.keys(
-                      initialAddress
-                    ) as (keyof typeof initialAddress)[]
-                  ).map((field) => (
+                  {(Object.keys(initialAddress) as (keyof typeof initialAddress)[]).map((field) => (
                     <TextInput
                       key={field}
                       mode="outlined"
@@ -709,16 +751,17 @@ const CheckoutScreen: React.FC = () => {
                     ₹{(calculateTotal() - discountAmount).toFixed(2)}
                   </Text>
                 </View>
+                {/* Pay with Razorpay Button (Native) */}
                 <Button
                   mode="contained"
                   style={{
                     marginTop: 16,
                     borderRadius: 23,
                     height: 48,
-                    backgroundColor: theme.tint,
+                    backgroundColor: "#3399cc",
                     shadowOpacity: 0.13,
                   }}
-                  onPress={handlePlaceOrder}
+                  onPress={handleRazorpayPayment}
                   loading={loading}
                   disabled={cartItems.length === 0 || selectedIdx === null}
                   labelStyle={{
@@ -737,6 +780,35 @@ const CheckoutScreen: React.FC = () => {
                 >
                   Place Order
                 </Button>
+                {/* Optional: COD fallback */}
+                {/* <Button
+                  mode="contained"
+                  style={{
+                    marginTop: 8,
+                    borderRadius: 23,
+                    height: 48,
+                    backgroundColor: theme.tint,
+                    shadowOpacity: 0.13,
+                  }}
+                  onPress={() => handlePlaceOrder("cod", "pending")}
+                  loading={loading}
+                  disabled={cartItems.length === 0 || selectedIdx === null}
+                  labelStyle={{
+                    fontSize: 18,
+                    fontWeight: "700",
+                    letterSpacing: 0.5,
+                    color: theme.background,
+                  }}
+                  icon={() => (
+                    <Ionicons
+                      name="cash-outline"
+                      size={22}
+                      color={theme.background}
+                    />
+                  )}
+                >
+                  Cash on Delivery
+                </Button> */}
               </Card.Content>
             </Card>
           </View>
@@ -753,7 +825,6 @@ const CheckoutScreen: React.FC = () => {
   );
 };
 
-// ----------- STYLES -----------
 const style = StyleSheet.create({
   container: {
     padding: 14,

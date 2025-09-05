@@ -158,14 +158,14 @@ export default function ProfileScreen() {
           />
         )}
 
-        {isAdmin && (
+        {/* {isAdmin && (
           <SectionButton
             icon="shield-checkmark-outline"
             title="Admin Panel"
             subtitle="Manage users, products & orders"
             href="/(tabs)/profile/admin-dashboard"
           />
-        )}
+        )} */}
       </ScrollView>
     </SafeAreaView>
   );
