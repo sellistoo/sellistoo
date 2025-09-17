@@ -18,7 +18,7 @@ export default function ProfileLayout() {
         options={{ title: "Seller Dashboard" }}
       />
 
-      {/* ❌ Remove this: */}
+      {/* Remove this: */}
       {/* 
       <Stack.Screen
         name="seller-dashboard/manage-products/index"
@@ -29,7 +29,7 @@ export default function ProfileLayout() {
       {/* ✅ Instead, disable header at the parent level: */}
       <Stack.Screen
         name="seller-dashboard/manage-products"
-        options={{ headerShown: false }}
+        options={{ headerShown: true }}
       />
     </Stack>
   );

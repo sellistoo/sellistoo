@@ -7,6 +7,7 @@ export default function ManageProductsLayout() {
         name="index"
         options={{
           title: "Manage Products",
+          headerShown: true
         }}
       />
       <Stack.Screen
@@ -16,7 +17,7 @@ export default function ManageProductsLayout() {
         }}
       />
       <Stack.Screen
-        name="ProductListScreen"
+        name="ProductListScreen" 
         options={{
           title: "Product List",
         }}
