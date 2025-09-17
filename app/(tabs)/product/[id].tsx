@@ -64,7 +64,7 @@ export default function ProductDetailScreen() {
     api
       .get(`/related-products/${id}?limit=10`)
       .then((res) => setRelatedProducts(res.data ?? []))
-      .catch(() => {});
+      .catch(() => { });
   }, [id]);
 
   const fav = product ? isFavorite(product._id || product.id) : false;
@@ -463,7 +463,7 @@ export default function ProductDetailScreen() {
             </Text>
           </View>
           {/* Buttons */}
-          <View style={{ flexDirection: "row", gap: 14, marginTop: 18 }}>
+          <View style={{ flexDirection: "row", gap: 14, marginTop: 18, justifyContent: "center", alignItems: "center" }}>
             <TouchableOpacity
               style={[
                 s.actionBtn,
@@ -475,7 +475,7 @@ export default function ProductDetailScreen() {
               <Feather name="shopping-cart" size={18} color="#fff" />
               <Text style={s.actionBtnText}>Add to Cart</Text>
             </TouchableOpacity>
-            <TouchableOpacity
+            {/* <TouchableOpacity
               style={[
                 s.actionBtn,
                 { backgroundColor: theme.accent },
@@ -486,8 +486,9 @@ export default function ProductDetailScreen() {
             >
               <Ionicons name="flash-outline" size={18} color="#fff" />
               <Text style={s.actionBtnText}>Buy Now</Text>
-            </TouchableOpacity>
+            </TouchableOpacity> */}
           </View>
+
           {/* Specs */}
           <View
             style={{
